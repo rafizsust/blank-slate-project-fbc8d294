@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Loader2, XCircle, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -115,13 +115,13 @@ export function WebAudioScheduledPlayer({
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownEndRef = useRef(0);
 
-  // Build list of parts we have URLs for
-  const availableParts = [
+  // Build list of parts we have URLs for - memoized to prevent re-renders
+  const availableParts = useMemo(() => [
     audioUrls.part1 ? 1 : null,
     audioUrls.part2 ? 2 : null,
     audioUrls.part3 ? 3 : null,
     audioUrls.part4 ? 4 : null,
-  ].filter(Boolean) as number[];
+  ].filter(Boolean) as number[], [audioUrls.part1, audioUrls.part2, audioUrls.part3, audioUrls.part4]);
 
   // Use refs to store current values for event handlers
   const currentPartRef = useRef(currentPart);
@@ -646,7 +646,7 @@ export function WebAudioScheduledPlayer({
                 
                 {/* Part progress dots */}
                 <div className="flex items-center gap-1">
-                  {availableParts.map((part) => (
+                  {availableParts.map((part: number) => (
                     <div
                       key={part}
                       className={cn(
