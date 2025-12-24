@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronRight, Clock, CheckCircle2, Circle, Play, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Play, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { getQuestionTypeInfo } from './QuestionTypeBadge';
 
 interface QuestionGroup {
@@ -60,25 +61,38 @@ export function BookSectionNew({
 
   if (filteredTests.length === 0) return null;
 
-  // Extract book number from name (e.g., "Cambridge 20" -> "20")
-  const bookNumber = bookName.match(/\d+/)?.[0] || '';
-  const moduleLabel = testType === 'reading' ? 'READING' : 'LISTENING';
+  const sortedTests = [...filteredTests].sort((a, b) => a.test_number - b.test_number);
+  const completedCount = sortedTests.filter(t => userScores[t.id]?.overall).length;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-      {/* Book Label - Left Side */}
-      <div className="lg:w-32 shrink-0">
-        <div className="lg:sticky lg:top-24 bg-foreground text-background rounded-xl p-4 lg:py-6">
-          <div className="text-xs font-semibold tracking-wide opacity-80">{moduleLabel}</div>
-          <div className="text-sm font-medium mt-0.5 opacity-70">ACADEMIC</div>
-          <div className="text-4xl lg:text-5xl font-bold mt-1">{bookNumber}</div>
+    <div className="mb-6">
+      {/* Book Header - IELTS beige style */}
+      <div 
+        className="flex items-center justify-between px-4 py-3 rounded-t-lg border border-b-0 border-border"
+        style={{ 
+          backgroundColor: 'hsl(var(--ielts-section-bg))',
+          fontFamily: 'var(--font-ielts)'
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-base font-bold" style={{ color: 'hsl(var(--ielts-section-text))' }}>
+            {bookName}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {sortedTests.length} test{sortedTests.length !== 1 ? 's' : ''}
+          </span>
         </div>
+        {completedCount > 0 && (
+          <span className="text-xs font-medium text-muted-foreground">
+            {completedCount}/{sortedTests.length} completed
+          </span>
+        )}
       </div>
 
-      {/* Test Cards Grid */}
-      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        {filteredTests.map((test) => (
-          <TestCard
+      {/* Tests Table */}
+      <div className="border border-border rounded-b-lg bg-card overflow-hidden">
+        {sortedTests.map((test) => (
+          <TestRow
             key={test.id}
             test={test}
             testType={testType}
@@ -90,16 +104,18 @@ export function BookSectionNew({
   );
 }
 
-// Individual Test Card
-interface TestCardProps {
+// Test Row Component
+interface TestRowProps {
   test: TestData;
   testType: 'reading' | 'listening';
   score?: { overall: TestScore | null; parts: Record<number, { score: number; totalQuestions: number }> };
 }
 
-function TestCard({ test, testType, score }: TestCardProps) {
+function TestRow({ test, testType, score }: TestRowProps) {
+  const navigate = useNavigate();
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const hasScore = score?.overall !== null && score?.overall !== undefined;
-  const isFinished = hasScore && score!.overall!.score === score!.overall!.totalQuestions;
 
   // Get parts data
   const partsData = useMemo(() => {
@@ -113,11 +129,12 @@ function TestCard({ test, testType, score }: TestCardProps) {
           title: passage.title,
           questionCount,
           types,
+          passageId: passage.id,
         };
       });
     } else {
       // Listening: 4 parts based on question ranges
-      const parts: { partNumber: number; questionCount: number; types: string[]; title?: string }[] = [];
+      const parts: { partNumber: number; questionCount: number; types: string[]; title?: string; passageId?: string }[] = [];
       for (let i = 1; i <= 4; i++) {
         const partGroups = test.question_groups?.filter(g => {
           const midQ = (g.start_question + g.end_question) / 2;
@@ -133,79 +150,199 @@ function TestCard({ test, testType, score }: TestCardProps) {
     }
   }, [test, testType]);
 
+  const allTypes = partsData.flatMap(p => p.types);
+  const uniqueTypes = [...new Set(allTypes)];
+
+  const handleStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/${testType}/test/${test.id}`);
+  };
+
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden border border-border bg-card">
-      {/* Card Header */}
-      <div className="bg-primary px-4 py-3 flex items-center justify-between">
-        <span className="font-bold text-primary-foreground">Test{test.test_number}</span>
-        {hasScore && (
-          <span className="text-xs font-medium text-primary-foreground/90">
-            {isFinished ? 'Finish' : 'Score'} {score!.overall!.score}/{score!.overall!.totalQuestions}
-          </span>
-        )}
-      </div>
+    <div className="border-b border-border last:border-b-0">
+      {/* Main Row */}
+      <div 
+        className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 cursor-pointer transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{ fontFamily: 'var(--font-ielts)' }}
+      >
+        {/* Expand Icon */}
+        <button className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </button>
 
-      {/* Parts List */}
-      <div className="flex-1 p-3 space-y-2">
-        {partsData.map((part) => {
-          const partScore = score?.parts?.[part.partNumber];
-          const partStarted = partScore !== undefined;
-          const partFinished = partScore && partScore.score === partScore.totalQuestions;
-          
-          // Get question type abbreviations
-          const typeAbbrs = part.types.map(t => getQuestionTypeInfo(t).short).join(' ');
-
-          return (
-            <Link
-              key={part.partNumber}
-              to={`/${testType}/test/${test.id}?part=${part.partNumber}`}
-              className={cn(
-                "block p-2.5 rounded-lg transition-colors hover:bg-secondary/50",
-                partStarted && !partFinished && "bg-primary/5"
-              )}
-            >
-              <div className={cn(
-                "text-sm font-medium truncate",
-                partStarted && !partFinished ? "text-primary" : "text-foreground"
-              )}>
-                Part{part.partNumber} {typeAbbrs}
-              </div>
-              <div className={cn(
-                "flex items-center gap-1.5 text-xs mt-1",
-                partStarted && !partFinished ? "text-primary" : "text-muted-foreground"
-              )}>
-                {partFinished ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                    <span className="text-success">Completed</span>
-                  </>
-                ) : partStarted ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5" />
-                    <span>Completed:{partScore.score}/{partScore.totalQuestions}</span>
-                  </>
-                ) : (
-                  <>
-                    <Circle className="w-3.5 h-3.5" />
-                    <span>Not started</span>
-                  </>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Start Full Test Button */}
-      <div className="p-3 pt-0">
-        <Link
-          to={`/${testType}/test/${test.id}`}
-          className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-foreground/10 hover:bg-foreground/20 text-foreground text-sm font-medium transition-colors"
+        {/* Test Number Badge */}
+        <div 
+          className="w-8 h-8 rounded border flex items-center justify-center font-bold text-sm shrink-0"
+          style={{ 
+            borderColor: 'hsl(var(--ielts-badge-border))',
+            backgroundColor: 'hsl(var(--ielts-badge-bg))',
+            color: 'hsl(var(--ielts-badge-text))'
+          }}
         >
-          <Play className="w-3.5 h-3.5" />
-          Full Test
-        </Link>
+          {test.test_number}
+        </div>
+
+        {/* Title & Meta */}
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm truncate text-foreground">
+            {test.title}
+          </div>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {test.time_limit} min
+            </span>
+            <span>{test.total_questions} Qs</span>
+            <span>{partsData.length} parts</span>
+          </div>
+        </div>
+
+        {/* Question Types (desktop only) */}
+        <div className="hidden lg:flex items-center gap-1 flex-wrap max-w-[200px] shrink-0">
+          {uniqueTypes.slice(0, 4).map((type, idx) => {
+            const info = getQuestionTypeInfo(type);
+            return (
+              <span 
+                key={idx}
+                className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground"
+                title={info.full}
+              >
+                {info.short}
+              </span>
+            );
+          })}
+          {uniqueTypes.length > 4 && (
+            <span className="text-[10px] text-muted-foreground">+{uniqueTypes.length - 4}</span>
+          )}
+        </div>
+
+        {/* Score/Status */}
+        <div className="flex items-center gap-2 shrink-0">
+          {hasScore && score?.overall && (
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "px-2 py-0.5 rounded text-xs font-semibold",
+                score.overall.bandScore && score.overall.bandScore >= 7 
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  : score.overall.bandScore && score.overall.bandScore >= 5.5
+                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                    : "bg-muted text-muted-foreground"
+              )}>
+                {score.overall.score}/{score.overall.totalQuestions}
+              </span>
+              {score.overall.bandScore && (
+                <span className="text-xs font-semibold text-primary hidden sm:inline">
+                  Band {score.overall.bandScore}
+                </span>
+              )}
+              <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+            </div>
+          )}
+          {!hasScore && (
+            <Circle className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+          )}
+        </div>
+
+        {/* Start Button */}
+        <Button 
+          size="sm" 
+          onClick={handleStart}
+          className="h-8 px-4 text-xs font-semibold shrink-0"
+          style={{ fontFamily: 'var(--font-ielts)' }}
+        >
+          <Play className="w-3 h-3 mr-1" />
+          {hasScore ? 'Retry' : 'Start'}
+        </Button>
       </div>
+
+      {/* Expanded Parts */}
+      {isExpanded && (
+        <div className="bg-muted/20 border-t border-border">
+          {partsData.map((part) => {
+            const partScore = score?.parts?.[part.partNumber];
+            const partFinished = partScore && partScore.score === partScore.totalQuestions;
+            const typeAbbrs = part.types
+              .map(t => getQuestionTypeInfo(t).short)
+              .filter((v, i, a) => a.indexOf(v) === i);
+
+            return (
+              <div 
+                key={part.partNumber}
+                className="flex items-center gap-3 px-4 py-2.5 pl-14 border-b border-border/50 last:border-b-0 hover:bg-muted/30 transition-colors"
+                style={{ fontFamily: 'var(--font-ielts)' }}
+              >
+                {/* Part Label */}
+                <div className="w-14 text-xs font-semibold text-muted-foreground uppercase tracking-wide shrink-0">
+                  Part {part.partNumber}
+                </div>
+
+                {/* Part Info */}
+                <div className="flex-1 min-w-0">
+                  {part.title && (
+                    <div className="text-sm text-foreground/80 truncate">
+                      {part.title}
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <span>{part.questionCount} Qs</span>
+                    {partScore && (
+                      <span className={cn(
+                        "font-medium",
+                        partFinished ? "text-green-600" : "text-primary"
+                      )}>
+                        • {partScore.score}/{partScore.totalQuestions}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Question Types */}
+                <div className="hidden sm:flex items-center gap-1 flex-wrap shrink-0">
+                  {typeAbbrs.map((abbr, idx) => (
+                    <span 
+                      key={idx}
+                      className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground"
+                    >
+                      {abbr}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Part Actions */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {testType === 'reading' && part.passageId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs hidden sm:flex"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/passage-study/${part.passageId}`);
+                      }}
+                    >
+                      <BookOpen className="w-3 h-3 mr-1" />
+                      Study
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-3 text-xs"
+                    style={{ fontFamily: 'var(--font-ielts)' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/${testType}/test/${test.id}?part=${part.partNumber}`);
+                    }}
+                  >
+                    Start
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
