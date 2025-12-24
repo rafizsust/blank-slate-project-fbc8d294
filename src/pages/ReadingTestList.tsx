@@ -4,7 +4,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { BookSectionNew, QuestionTypeFilter } from '@/components/test-list';
 import { Card, CardContent } from '@/components/ui/card';
-import { BookOpen, Sparkles } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useUserTestScores } from '@/hooks/useUserTestScores';
 
 interface Passage {
@@ -135,23 +135,21 @@ export default function ReadingTestList() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-secondary/20">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              <Sparkles className="w-4 h-4" />
-              IELTS Academic Reading
+      <main className="flex-1 container mx-auto px-4 py-6">
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Compact Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                Reading Practice
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Academic IELTS • {tests.length} tests available
+              </p>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
-              Reading Practice Tests
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Master every question type with targeted practice. Select individual parts or dive into complete tests.
-            </p>
           </div>
 
           {/* Question Type Filter */}
