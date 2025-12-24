@@ -1,0 +1,1263 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
+  public: {
+    Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_cards: {
+        Row: {
+          correct_count: number
+          created_at: string
+          deck_id: string
+          example: string | null
+          id: string
+          meaning: string
+          next_review_at: string | null
+          review_count: number
+          status: string
+          translation: string | null
+          updated_at: string
+          user_id: string
+          word: string
+        }
+        Insert: {
+          correct_count?: number
+          created_at?: string
+          deck_id: string
+          example?: string | null
+          id?: string
+          meaning: string
+          next_review_at?: string | null
+          review_count?: number
+          status?: string
+          translation?: string | null
+          updated_at?: string
+          user_id: string
+          word: string
+        }
+        Update: {
+          correct_count?: number
+          created_at?: string
+          deck_id?: string
+          example?: string | null
+          id?: string
+          meaning?: string
+          next_review_at?: string | null
+          review_count?: number
+          status?: string
+          translation?: string | null
+          updated_at?: string
+          user_id?: string
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_cards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_decks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      listening_question_groups: {
+        Row: {
+          created_at: string | null
+          end_question: number
+          group_heading: string | null
+          group_heading_alignment: string | null
+          id: string
+          instruction: string | null
+          options: Json | null
+          question_type: string
+          start_question: number
+          start_timestamp_seconds: number | null
+          test_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_question: number
+          group_heading?: string | null
+          group_heading_alignment?: string | null
+          id?: string
+          instruction?: string | null
+          options?: Json | null
+          question_type: string
+          start_question: number
+          start_timestamp_seconds?: number | null
+          test_id: string
+        }
+        Update: {
+          created_at?: string | null
+          end_question?: number
+          group_heading?: string | null
+          group_heading_alignment?: string | null
+          id?: string
+          instruction?: string | null
+          options?: Json | null
+          question_type?: string
+          start_question?: number
+          start_timestamp_seconds?: number | null
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listening_question_groups_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "listening_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listening_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          group_id: string
+          heading: string | null
+          id: string
+          is_given: boolean
+          option_format: string | null
+          options: Json | null
+          question_number: number
+          question_text: string
+          table_data: Json | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          group_id: string
+          heading?: string | null
+          id?: string
+          is_given?: boolean
+          option_format?: string | null
+          options?: Json | null
+          question_number: number
+          question_text: string
+          table_data?: Json | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          group_id?: string
+          heading?: string | null
+          id?: string
+          is_given?: boolean
+          option_format?: string | null
+          options?: Json | null
+          question_number?: number
+          question_text?: string
+          table_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listening_questions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "listening_question_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listening_test_submissions: {
+        Row: {
+          answers: Json
+          band_score: number | null
+          completed_at: string
+          created_at: string
+          id: string
+          score: number
+          test_id: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          band_score?: number | null
+          completed_at?: string
+          created_at?: string
+          id?: string
+          score?: number
+          test_id: string
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          band_score?: number | null
+          completed_at?: string
+          created_at?: string
+          id?: string
+          score?: number
+          test_id?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listening_test_submissions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "listening_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listening_tests: {
+        Row: {
+          audio_url: string | null
+          audio_url_part1: string | null
+          audio_url_part2: string | null
+          audio_url_part3: string | null
+          audio_url_part4: string | null
+          book_name: string
+          created_at: string | null
+          id: string
+          is_published: boolean
+          test_number: number
+          test_type: string
+          time_limit: number
+          title: string
+          total_questions: number
+          transcript_part1: string | null
+          transcript_part2: string | null
+          transcript_part3: string | null
+          transcript_part4: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          audio_url_part1?: string | null
+          audio_url_part2?: string | null
+          audio_url_part3?: string | null
+          audio_url_part4?: string | null
+          book_name: string
+          created_at?: string | null
+          id?: string
+          is_published?: boolean
+          test_number: number
+          test_type?: string
+          time_limit?: number
+          title: string
+          total_questions?: number
+          transcript_part1?: string | null
+          transcript_part2?: string | null
+          transcript_part3?: string | null
+          transcript_part4?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          audio_url_part1?: string | null
+          audio_url_part2?: string | null
+          audio_url_part3?: string | null
+          audio_url_part4?: string | null
+          book_name?: string
+          created_at?: string | null
+          id?: string
+          is_published?: boolean
+          test_number?: number
+          test_type?: string
+          time_limit?: number
+          title?: string
+          total_questions?: number
+          transcript_part1?: string | null
+          transcript_part2?: string | null
+          transcript_part3?: string | null
+          transcript_part4?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
+      reading_paragraphs: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_heading: boolean
+          label: string
+          order_index: number
+          passage_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_heading?: boolean
+          label: string
+          order_index: number
+          passage_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_heading?: boolean
+          label?: string
+          order_index?: number
+          passage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_paragraphs_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "reading_passages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_passages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          passage_number: number
+          show_labels: boolean
+          test_id: string
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          passage_number: number
+          show_labels?: boolean
+          test_id: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          passage_number?: number
+          show_labels?: boolean
+          test_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_passages_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "reading_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_question_groups: {
+        Row: {
+          created_at: string
+          display_as_paragraph: boolean | null
+          end_question: number
+          id: string
+          instruction: string | null
+          options: Json | null
+          passage_id: string
+          question_type: string
+          show_bullets: boolean | null
+          show_headings: boolean | null
+          start_question: number
+          use_dropdown: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          display_as_paragraph?: boolean | null
+          end_question: number
+          id?: string
+          instruction?: string | null
+          options?: Json | null
+          passage_id: string
+          question_type: string
+          show_bullets?: boolean | null
+          show_headings?: boolean | null
+          start_question: number
+          use_dropdown?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          display_as_paragraph?: boolean | null
+          end_question?: number
+          id?: string
+          instruction?: string | null
+          options?: Json | null
+          passage_id?: string
+          question_type?: string
+          show_bullets?: boolean | null
+          show_headings?: boolean | null
+          start_question?: number
+          use_dropdown?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_question_groups_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "reading_passages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          heading: string | null
+          id: string
+          instruction: string | null
+          option_format: string | null
+          options: Json | null
+          passage_id: string
+          question_group_id: string | null
+          question_number: number
+          question_text: string
+          question_type: string
+          table_data: Json | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          heading?: string | null
+          id?: string
+          instruction?: string | null
+          option_format?: string | null
+          options?: Json | null
+          passage_id: string
+          question_group_id?: string | null
+          question_number: number
+          question_text: string
+          question_type: string
+          table_data?: Json | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          heading?: string | null
+          id?: string
+          instruction?: string | null
+          option_format?: string | null
+          options?: Json | null
+          passage_id?: string
+          question_group_id?: string | null
+          question_number?: number
+          question_text?: string
+          question_type?: string
+          table_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_questions_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "reading_passages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_test_submissions: {
+        Row: {
+          answers: Json
+          band_score: number | null
+          completed_at: string
+          created_at: string
+          id: string
+          score: number
+          test_id: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          band_score?: number | null
+          completed_at?: string
+          created_at?: string
+          id?: string
+          score?: number
+          test_id: string
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          band_score?: number | null
+          completed_at?: string
+          created_at?: string
+          id?: string
+          score?: number
+          test_id?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_test_submissions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "reading_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_tests: {
+        Row: {
+          book_name: string
+          created_at: string
+          id: string
+          is_published: boolean
+          test_number: number
+          test_type: string
+          time_limit: number
+          title: string
+          total_questions: number
+          updated_at: string
+        }
+        Insert: {
+          book_name: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          test_number: number
+          test_type?: string
+          time_limit?: number
+          title: string
+          total_questions?: number
+          updated_at?: string
+        }
+        Update: {
+          book_name?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          test_number?: number
+          test_type?: string
+          time_limit?: number
+          title?: string
+          total_questions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      speaking_question_groups: {
+        Row: {
+          created_at: string | null
+          cue_card_content: string | null
+          cue_card_topic: string | null
+          id: string
+          instruction: string | null
+          min_required_questions: number | null
+          options: Json | null
+          part_number: number
+          preparation_time_seconds: number | null
+          speaking_time_seconds: number | null
+          test_id: string
+          time_limit_seconds: number | null
+          total_part_time_limit_seconds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cue_card_content?: string | null
+          cue_card_topic?: string | null
+          id?: string
+          instruction?: string | null
+          min_required_questions?: number | null
+          options?: Json | null
+          part_number: number
+          preparation_time_seconds?: number | null
+          speaking_time_seconds?: number | null
+          test_id: string
+          time_limit_seconds?: number | null
+          total_part_time_limit_seconds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cue_card_content?: string | null
+          cue_card_topic?: string | null
+          id?: string
+          instruction?: string | null
+          min_required_questions?: number | null
+          options?: Json | null
+          part_number?: number
+          preparation_time_seconds?: number | null
+          speaking_time_seconds?: number | null
+          test_id?: string
+          time_limit_seconds?: number | null
+          total_part_time_limit_seconds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaking_question_groups_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "speaking_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speaking_questions: {
+        Row: {
+          created_at: string | null
+          group_id: string
+          id: string
+          is_required: boolean
+          order_index: number
+          question_number: number
+          question_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: string
+          id?: string
+          is_required?: boolean
+          order_index: number
+          question_number: number
+          question_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          is_required?: boolean
+          order_index?: number
+          question_number?: number
+          question_text?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaking_questions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "speaking_question_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speaking_submissions: {
+        Row: {
+          audio_url_part1: string | null
+          audio_url_part2: string | null
+          audio_url_part3: string | null
+          created_at: string | null
+          evaluation_report: Json | null
+          id: string
+          overall_band: number | null
+          submitted_at: string | null
+          test_id: string
+          transcript_part1: string | null
+          transcript_part2: string | null
+          transcript_part3: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url_part1?: string | null
+          audio_url_part2?: string | null
+          audio_url_part3?: string | null
+          created_at?: string | null
+          evaluation_report?: Json | null
+          id?: string
+          overall_band?: number | null
+          submitted_at?: string | null
+          test_id: string
+          transcript_part1?: string | null
+          transcript_part2?: string | null
+          transcript_part3?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url_part1?: string | null
+          audio_url_part2?: string | null
+          audio_url_part3?: string | null
+          created_at?: string | null
+          evaluation_report?: Json | null
+          id?: string
+          overall_band?: number | null
+          submitted_at?: string | null
+          test_id?: string
+          transcript_part1?: string | null
+          transcript_part2?: string | null
+          transcript_part3?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaking_submissions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "speaking_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speaking_tests: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_published: boolean
+          name: string
+          test_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name: string
+          test_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name?: string
+          test_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          plan_name: string
+          price: number
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          plan_name: string
+          price: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          plan_name?: string
+          price?: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_results: {
+        Row: {
+          answers: Json | null
+          band_score: number | null
+          completed_at: string
+          created_at: string
+          feedback: Json | null
+          id: string
+          score: number | null
+          test_type: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          band_score?: number | null
+          completed_at?: string
+          created_at?: string
+          feedback?: Json | null
+          id?: string
+          score?: number | null
+          test_type: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          band_score?: number | null
+          completed_at?: string
+          created_at?: string
+          feedback?: Json | null
+          id?: string
+          score?: number | null
+          test_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_analytics: {
+        Row: {
+          analysis_data: Json
+          created_at: string
+          generated_at: string
+          id: string
+          module_type: string
+          tests_analyzed: number
+          user_id: string
+        }
+        Insert: {
+          analysis_data?: Json
+          created_at?: string
+          generated_at?: string
+          id?: string
+          module_type: string
+          tests_analyzed?: number
+          user_id: string
+        }
+        Update: {
+          analysis_data?: Json
+          created_at?: string
+          generated_at?: string
+          id?: string
+          module_type?: string
+          tests_analyzed?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_secrets: {
+        Row: {
+          created_at: string | null
+          encrypted_value: string
+          id: string
+          secret_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          encrypted_value: string
+          id?: string
+          secret_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          encrypted_value?: string
+          id?: string
+          secret_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      writing_submissions: {
+        Row: {
+          evaluation_report: Json | null
+          id: string
+          overall_band: number | null
+          submission_text: string
+          submitted_at: string | null
+          task_id: string
+          user_id: string
+          word_count: number
+        }
+        Insert: {
+          evaluation_report?: Json | null
+          id?: string
+          overall_band?: number | null
+          submission_text: string
+          submitted_at?: string | null
+          task_id: string
+          user_id: string
+          word_count: number
+        }
+        Update: {
+          evaluation_report?: Json | null
+          id?: string
+          overall_band?: number | null
+          submission_text?: string
+          submitted_at?: string | null
+          task_id?: string
+          user_id?: string
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "writing_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "writing_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      writing_tasks: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_height: number | null
+          image_url: string | null
+          image_width: number | null
+          instruction: string
+          task_type: Database["public"]["Enums"]["writing_task_type"]
+          text_content: string | null
+          updated_at: string | null
+          word_limit_max: number | null
+          word_limit_min: number
+          writing_test_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_height?: number | null
+          image_url?: string | null
+          image_width?: number | null
+          instruction: string
+          task_type: Database["public"]["Enums"]["writing_task_type"]
+          text_content?: string | null
+          updated_at?: string | null
+          word_limit_max?: number | null
+          word_limit_min?: number
+          writing_test_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_height?: number | null
+          image_url?: string | null
+          image_width?: number | null
+          instruction?: string
+          task_type?: Database["public"]["Enums"]["writing_task_type"]
+          text_content?: string | null
+          updated_at?: string | null
+          word_limit_max?: number | null
+          word_limit_min?: number
+          writing_test_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "writing_tasks_writing_test_id_fkey"
+            columns: ["writing_test_id"]
+            isOneToOne: false
+            referencedRelation: "writing_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      writing_tests: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          time_limit: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          time_limit?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          time_limit?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      can_user_submit: { Args: { p_user_id: string }; Returns: boolean }
+      has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
+      is_admin: { Args: { check_user_id: string }; Returns: boolean }
+      is_promotion_active: { Args: never; Returns: boolean }
+    }
+    Enums: {
+      subscription_status: "active" | "cancelled" | "expired" | "pending"
+      writing_task_type: "task1" | "task2"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      subscription_status: ["active", "cancelled", "expired", "pending"],
+      writing_task_type: ["task1", "task2"],
+    },
+  },
+} as const

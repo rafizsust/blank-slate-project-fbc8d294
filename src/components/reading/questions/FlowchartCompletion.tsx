@@ -1,0 +1,115 @@
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { ArrowDown, ArrowRight } from 'lucide-react';
+
+interface FlowchartStep {
+  id: string;
+  label: string;
+  questionNumber?: number; // If has a blank to fill
+  isBlank?: boolean;
+}
+
+interface FlowchartCompletionProps {
+  title?: string;
+  steps: FlowchartStep[];
+  direction?: 'vertical' | 'horizontal';
+  answers: Record<number, string>;
+  onAnswerChange: (questionNumber: number, answer: string) => void;
+  currentQuestion: number;
+  fontSize?: number;
+}
+
+export function FlowchartCompletion({
+  title,
+  steps,
+  direction = 'vertical',
+  answers,
+  onAnswerChange,
+  currentQuestion,
+  fontSize = 14,
+}: FlowchartCompletionProps) {
+  const isVertical = direction === 'vertical';
+  const ArrowIcon = isVertical ? ArrowDown : ArrowRight;
+
+  return (
+    <div className="space-y-3" style={{ fontSize: `${fontSize}px` }}>
+      {title && (
+        <h4 className="font-semibold text-base text-foreground mb-3">{title}</h4>
+      )}
+      
+      <div className={cn(
+        "flex items-center justify-center gap-2",
+        isVertical ? "flex-col" : "flex-row flex-wrap"
+      )}>
+        {steps.map((step, index) => {
+          const isActive = step.questionNumber === currentQuestion;
+          const answer = step.questionNumber ? answers[step.questionNumber] : undefined;
+          const isLast = index === steps.length - 1;
+
+          return (
+            <div key={step.id} className={cn(
+              "flex items-center",
+              isVertical ? "flex-col" : "flex-row"
+            )}>
+              {/* Flowchart Box */}
+              <div
+                className={cn(
+                  "relative border-2 rounded-lg p-4 min-w-[180px] max-w-[280px] text-center transition-all",
+                  isActive
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border bg-card hover:border-muted-foreground/50"
+                )}
+              >
+                {/* Question number badge */}
+                {step.questionNumber && (
+                  <span className={cn(
+                    "absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : answer
+                        ? "bg-green-500 text-white"
+                        : "bg-muted text-muted-foreground"
+                  )}>
+                    {step.questionNumber}
+                  </span>
+                )}
+
+                {/* Content */}
+                {step.isBlank && step.questionNumber ? (
+                  <div className="space-y-2">
+                    <span className="text-muted-foreground text-sm">{step.label}</span>
+                    <Input
+                      type="text"
+                      value={answer || ''}
+                      onChange={(e) => onAnswerChange(step.questionNumber!, e.target.value)}
+                      placeholder={String(step.questionNumber)}
+                      className={cn(
+                        "h-7 text-sm min-w-[174px] max-w-full rounded-[3px] text-center placeholder:font-bold placeholder:text-foreground/70",
+                        isActive
+                          ? "border-primary focus:ring-primary"
+                          : "border-border"
+                      )}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                ) : (
+                  <span className="text-foreground font-medium">{step.label}</span>
+                )}
+              </div>
+
+              {/* Arrow */}
+              {!isLast && (
+                <div className={cn(
+                  "flex items-center justify-center text-muted-foreground",
+                  isVertical ? "py-2" : "px-2"
+                )}>
+                  <ArrowIcon className="w-5 h-5" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

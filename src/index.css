@@ -1,0 +1,2163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* IELTS Official Test Font - Clean sans-serif like official test */
+:root {
+  --font-ielts: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    /* AI-Inspired Light Theme - Cyans, Deep Blues, Neural Network Vibes */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary - Vibrant Cyan/Teal */
+    --primary: 187 85% 43%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent - Electric Violet */
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 187 85% 43%;
+
+    /* IELTS Official Input Styling - Inspera-style */
+    --ielts-input-border: 0 0% 60%;
+    --ielts-input-focus: 210 100% 45%;
+    --ielts-input-bg: 0 0% 100%;
+    --ielts-drag-border: 0 0% 50%;
+    --ielts-drag-hover: 210 100% 50%;
+    --ielts-ghost: 0 0% 90%;
+    
+    /* IELTS Dropdown Option Styling */
+    --ielts-option-hover: 210 40% 96%;
+    --ielts-option-selected: 210 40% 94%;
+    
+    /* IELTS Question Number Badge */
+    --ielts-badge-border: 0 0% 40%;
+    --ielts-badge-bg: 0 0% 100%;
+    --ielts-badge-text: 0 0% 20%;
+    
+    /* IELTS Radio/Checkbox */
+    --ielts-radio-border: 0 0% 50%;
+    --ielts-radio-checked: 0 0% 20%;
+    
+    /* IELTS Section Header */
+    --ielts-section-bg: 45 20% 92%;
+    --ielts-section-text: 0 0% 20%;
+
+    --radius: 0.75rem;
+
+    /* AI Theme Colors */
+    --ai-cyan: 187 85% 43%;
+    --ai-cyan-light: 187 85% 55%;
+    --ai-cyan-dark: 187 85% 35%;
+    
+    --ai-violet: 262 83% 58%;
+    --ai-violet-light: 262 83% 68%;
+    --ai-violet-dark: 262 83% 48%;
+    
+    --ai-blue: 217 91% 60%;
+    --ai-blue-deep: 222 47% 11%;
+    
+    --ai-glow: 187 85% 43%;
+    
+    --neural-grid: 214 32% 91%;
+    
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Gradients */
+    --gradient-ai: linear-gradient(135deg, hsl(187 85% 43%), hsl(262 83% 58%));
+    --gradient-hero: linear-gradient(135deg, hsl(222 47% 11% / 0.95), hsl(217 91% 20% / 0.9));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(187 85% 43% / 0.15), transparent 70%);
+
+    /* Question type colors */
+    --qt-tfng: 200 85% 50%;
+    --qt-mcq: 280 70% 50%;
+    --qt-fill: 45 90% 50%;
+    --qt-match: 160 70% 45%;
+    --qt-heading: 340 75% 55%;
+    --qt-summary: 25 90% 50%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 187 85% 43%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 187 85% 43%;
+
+    /* Typography */
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  .dark {
+    /* IELTS Official High Contrast Dark Theme - Matches Inspera "White on black" */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 70%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 30%;
+    --input: 0 0% 8%;
+    --ring: 0 0% 100%;
+
+    /* IELTS Official Styling - Dark theme (White on black) */
+    --ielts-input-border: 0 0% 50%;
+    --ielts-input-focus: 0 0% 100%;
+    --ielts-input-bg: 0 0% 8%;
+    --ielts-drag-border: 0 0% 50%;
+    --ielts-drag-hover: 0 0% 100%;
+    --ielts-ghost: 0 0% 20%;
+    --ielts-option-hover: 0 0% 20%;
+    --ielts-option-selected: 0 0% 25%;
+    --ielts-badge-border: 0 0% 60%;
+    --ielts-badge-bg: 0 0% 8%;
+    --ielts-badge-text: 0 0% 100%;
+    --ielts-radio-border: 0 0% 60%;
+    --ielts-radio-checked: 0 0% 100%;
+    --ielts-section-bg: 0 0% 12%;
+    --ielts-section-text: 0 0% 100%;
+
+    --ai-glow: 0 0% 100%;
+    --neural-grid: 0 0% 20%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 0% / 0.95), hsl(0 0% 0% / 0.9));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 8%), hsl(0 0% 0%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(0 0% 100% / 0.1), transparent 70%);
+
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 30%;
+    --sidebar-ring: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold tracking-tight;
+  }
+
+  /* Custom selection color */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: inherit;
+  }
+}
+
+@layer components {
+  .nav-link {
+    @apply text-foreground/80 hover:text-primary transition-colors duration-200 font-medium text-sm;
+  }
+
+  .nav-link-active {
+    @apply text-primary-foreground bg-primary rounded-full px-6 py-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:shadow-primary/25;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 font-semibold px-8 py-3 rounded-xl;
+  }
+
+  .btn-ai {
+    @apply relative overflow-hidden bg-gradient-to-r from-primary to-accent text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  .btn-ai::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-accent to-primary opacity-0 transition-opacity duration-300;
+  }
+
+  .btn-ai:hover::before {
+    @apply opacity-100;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-bold text-center;
+  }
+
+  .section-subtitle {
+    @apply text-muted-foreground text-center text-lg max-w-2xl mx-auto;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .card-ai {
+    @apply relative overflow-hidden bg-card border border-border/50 rounded-2xl;
+  }
+
+  .card-ai::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 transition-opacity duration-300;
+  }
+
+  .card-ai:hover::before {
+    @apply opacity-100;
+  }
+
+  .feature-icon {
+    @apply w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary;
+  }
+
+  .step-number {
+    @apply w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent text-white flex items-center justify-center font-bold text-xl shadow-lg;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient;
+  }
+
+  .gradient-text-static {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(222 47% 11% / 0.9), hsl(217 91% 15% / 0.85));
+  }
+
+  .ai-glow {
+    box-shadow: 0 0 40px hsl(var(--ai-glow) / 0.3), 0 0 80px hsl(var(--ai-glow) / 0.1);
+  }
+
+  .ai-glow-sm {
+    box-shadow: 0 0 20px hsl(var(--ai-glow) / 0.2);
+  }
+
+  .neural-grid {
+    background-image: 
+      linear-gradient(hsl(var(--neural-grid)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--neural-grid)) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  .glass {
+    @apply bg-background/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .glass-dark {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .pricing-card {
+    @apply relative bg-card rounded-2xl p-6 border border-border shadow-lg;
+  }
+
+  .pricing-card-featured {
+    @apply relative bg-primary rounded-2xl p-6 shadow-xl;
+  }
+
+  /* ========================================
+     IELTS OFFICIAL EXAM COMPONENTS
+     Matching Inspera/IDP official styling
+     ======================================== */
+
+  /* IELTS Question Number Badge - boxed style like [1] */
+  .ielts-question-badge {
+    font-family: var(--font-ielts);
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  /* IELTS Input Field - clean bordered with rounded corners */
+  .ielts-input {
+    font-family: var(--font-ielts);
+    border-radius: 3px;
+    transition: border-color 0.15s ease;
+  }
+
+  .ielts-input:focus {
+    border-width: 2px;
+    border-color: hsl(var(--ielts-input-focus));
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* IELTS Input with question number inside */
+  .ielts-input-with-number {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ielts-input-with-number input {
+    padding-left: 28px;
+  }
+
+  .ielts-input-with-number .ielts-input-number-inside {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 700;
+    font-size: 13px;
+    color: hsl(var(--ielts-badge-text));
+    pointer-events: none;
+    font-family: var(--font-ielts);
+  }
+
+  /* IELTS MCQ Option Row */
+  .ielts-mcq-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-radius: 2px;
+  }
+
+  .ielts-mcq-option:hover {
+    background-color: hsl(var(--ielts-option-hover, 0 0% 96%));
+  }
+
+  .ielts-mcq-option--selected {
+    background-color: hsl(var(--ielts-option-bg, 0 0% 97%));
+  }
+
+  /* IELTS Radio Button Indicator */
+  .ielts-mcq-indicator {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* IELTS Section Header - beige/gray background */
+  .ielts-section-header {
+    background-color: hsl(var(--ielts-section-bg));
+    color: hsl(var(--ielts-section-text));
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: var(--font-ielts);
+    margin-bottom: 12px;
+  }
+
+  /* IELTS Drag & Drop Option */
+  .ielts-drag-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid hsl(var(--ielts-drag-border));
+    background-color: hsl(var(--ielts-badge-bg, 0 0% 100%));
+    border-radius: 6px;
+    cursor: grab;
+    font-family: var(--font-ielts);
+    font-size: 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .ielts-drag-option:hover {
+    border-color: hsl(var(--ielts-drag-hover));
+  }
+
+  .ielts-drag-option:active {
+    cursor: grabbing;
+  }
+
+  /* IELTS Drop Zone */
+  .ielts-drop-zone {
+    min-width: 120px;
+    min-height: 28px;
+    border: 1px dashed hsl(var(--ielts-drag-border));
+    background-color: transparent;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .ielts-drop-zone--active {
+    border-color: hsl(var(--ielts-drag-hover));
+    border-style: solid;
+    background-color: hsl(var(--ielts-input-focus) / 0.1);
+  }
+
+  .ielts-drop-zone--filled {
+    border-style: solid;
+    background-color: hsl(var(--ielts-badge-bg, 0 0% 100%));
+    border-radius: 6px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+}
+
+/* Gradient animation */
+@keyframes gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+}
+
+/* Custom scrollbar styles - Sleek AI-themed */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.4));
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.7), hsl(var(--accent) / 0.7));
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.3) hsl(var(--muted) / 0.2);
+}
+
+/* Question group visual styling - Clean IELTS style without left sidebar */
+.question-group-container {
+  @apply relative mb-6;
+}
+
+.question-group-header {
+  @apply px-4 py-2 mb-3;
+}
+
+/* IELTS Highlight styles - ALWAYS orange to match selection color */
+.ielts-highlight {
+  background-color: hsl(30 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+  padding: 0 2px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.ielts-highlight-note {
+  background-color: hsl(30 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+  text-decoration: underline;
+  text-decoration-color: hsl(30 100% 35%);
+  text-decoration-thickness: 2px;
+}
+
+/* Legacy highlight colors - also force orange */
+mark.bg-yellow-200,
+mark.bg-orange-400 { 
+  background-color: hsl(30 100% 50%) !important; 
+  color: hsl(0 0% 0%) !important; 
+}
+
+.dark .ielts-highlight,
+.dark .ielts-highlight-note,
+.dark mark.bg-yellow-200,
+.dark mark.bg-orange-400 { 
+  background-color: hsl(30 100% 50%) !important; 
+  color: hsl(0 0% 0%) !important; 
+}
+
+mark.bg-green-200 { background-color: hsl(160 60% 75%); }
+mark.bg-blue-200 { background-color: hsl(200 80% 80%); }
+mark.bg-pink-200 { background-color: hsl(340 70% 85%); }
+
+.dark mark.bg-green-200 { background-color: hsl(160 60% 25% / 0.6); }
+.dark mark.bg-blue-200 { background-color: hsl(200 70% 30% / 0.6); }
+.dark mark.bg-pink-200 { background-color: hsl(340 60% 30% / 0.6); }
+
+/* Floating orb animations for AI effect */
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(10px, -10px) scale(1.05); }
+  50% { transform: translate(0, -20px) scale(1); }
+  75% { transform: translate(-10px, -10px) scale(0.95); }
+}
+
+.animate-float-orb {
+  animation: float-orb 6s ease-in-out infinite;
+}
+
+.animate-float-orb-delayed {
+  animation: float-orb 6s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+/* Pulse glow for AI elements */
+@keyframes pulse-glow-ai {
+  0%, 100% { 
+    box-shadow: 0 0 20px hsl(var(--ai-glow) / 0.3);
+    opacity: 1;
+  }
+  50% { 
+    box-shadow: 0 0 40px hsl(var(--ai-glow) / 0.5), 0 0 60px hsl(var(--ai-glow) / 0.2);
+    opacity: 0.9;
+  }
+}
+
+.animate-pulse-glow-ai {
+  animation: pulse-glow-ai 3s ease-in-out infinite;
+}
+
+/* IELTS Test Contrast Themes */
+.ielts-theme-black-on-white {
+  --ielts-bg: 0 0% 100%;
+  --ielts-fg: 0 0% 0%;
+  --ielts-card-bg: 0 0% 100%;
+  --ielts-border: 0 0% 85%;
+  --ielts-muted: 0 0% 96%;
+  --ielts-muted-fg: 0 0% 40%;
+  --ielts-input-bg: 0 0% 100%;
+  --ielts-option-bg: 0 0% 97%;
+  --ielts-option-hover: 0 0% 94%;
+}
+
+.ielts-theme-white-on-black {
+  --ielts-bg: 0 0% 0%;
+  --ielts-fg: 0 0% 100%;
+  --ielts-card-bg: 0 0% 8%;
+  --ielts-border: 0 0% 30%;
+  --ielts-muted: 0 0% 12%;
+  --ielts-muted-fg: 0 0% 70%;
+  --ielts-input-bg: 0 0% 15%;
+  --ielts-option-bg: 0 0% 15%;
+  --ielts-option-hover: 0 0% 20%;
+  
+  /* IELTS Official Styling - Dark theme overrides */
+  --ielts-input-border: 0 0% 50%;
+  --ielts-input-focus: 210 100% 60%;
+  --ielts-drag-border: 0 0% 50%;
+  --ielts-drag-hover: 210 100% 60%;
+  --ielts-ghost: 0 0% 35%;
+  --ielts-badge-border: 0 0% 60%;
+  --ielts-badge-bg: 0 0% 15%;
+  --ielts-badge-text: 0 0% 100%;
+  --ielts-radio-border: 0 0% 60%;
+  --ielts-radio-checked: 0 0% 100%;
+  --ielts-section-bg: 0 0% 12%;
+  --ielts-section-text: 0 0% 100%;
+}
+
+.ielts-theme-yellow-on-black {
+  --ielts-bg: 0 0% 0%;
+  --ielts-fg: 50 100% 50%;
+  --ielts-card-bg: 0 0% 8%;
+  --ielts-border: 50 60% 30%;
+  --ielts-muted: 0 0% 12%;
+  --ielts-muted-fg: 50 80% 60%;
+  --ielts-input-bg: 0 0% 15%;
+  --ielts-option-bg: 0 0% 15%;
+  --ielts-option-hover: 0 0% 20%;
+  
+  /* IELTS Official Styling - Yellow on black overrides */
+  --ielts-input-border: 50 80% 40%;
+  --ielts-input-focus: 50 100% 50%;
+  --ielts-drag-border: 50 80% 40%;
+  --ielts-drag-hover: 50 100% 50%;
+  --ielts-ghost: 50 50% 30%;
+  --ielts-badge-border: 50 80% 50%;
+  --ielts-badge-bg: 0 0% 15%;
+  --ielts-badge-text: 50 100% 50%;
+  --ielts-radio-border: 50 80% 50%;
+  --ielts-radio-checked: 50 100% 50%;
+  --ielts-section-bg: 0 0% 12%;
+  --ielts-section-text: 50 100% 50%;
+}
+
+/* Text selection color for dark themes - orange highlight */
+.ielts-theme-white-on-black ::selection,
+.ielts-theme-white-on-black *::selection {
+  background-color: hsl(30 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+.ielts-theme-yellow-on-black ::selection,
+.ielts-theme-yellow-on-black *::selection {
+  background-color: hsl(30 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+/* Text size modes - define base sizes */
+.ielts-text-regular {
+  --ielts-text-base: 16px;
+  --ielts-text-sm: 14px;
+  --ielts-text-xs: 12px;
+  --ielts-text-lg: 18px;
+  --ielts-text-xl: 20px;
+}
+
+.ielts-text-large {
+  --ielts-text-base: 18px;
+  --ielts-text-sm: 16px;
+  --ielts-text-xs: 14px;
+  --ielts-text-lg: 20px;
+  --ielts-text-xl: 22px;
+}
+
+.ielts-text-extra-large {
+  --ielts-text-base: 20px;
+  --ielts-text-sm: 18px;
+  --ielts-text-xs: 16px;
+  --ielts-text-lg: 22px;
+  --ielts-text-xl: 24px;
+}
+
+/* Apply IELTS theme to test content - cascading colors */
+.ielts-test-content {
+  background-color: hsl(var(--ielts-bg)) !important;
+  color: hsl(var(--ielts-fg)) !important;
+}
+
+/* Force all text elements to inherit theme color */
+.ielts-test-content *:not(.bg-primary):not(.bg-destructive):not([class*="text-primary"]):not([class*="text-destructive"]) {
+  color: inherit;
+}
+
+/* Apply text sizes throughout */
+.ielts-test-content {
+  font-size: var(--ielts-text-base) !important;
+  line-height: 1.6;
+}
+
+.ielts-test-content h1,
+.ielts-test-content h2,
+.ielts-test-content h3 {
+  font-size: var(--ielts-text-lg);
+  color: hsl(var(--ielts-fg));
+}
+
+.ielts-test-content p,
+.ielts-test-content span,
+.ielts-test-content div,
+.ielts-test-content li,
+.ielts-test-content label {
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Card backgrounds */
+.ielts-test-content .ielts-card,
+.ielts-test-content [class*="bg-card"] {
+  background-color: hsl(var(--ielts-card-bg)) !important;
+  color: hsl(var(--ielts-fg)) !important;
+}
+
+/* Muted backgrounds */
+.ielts-test-content .ielts-muted,
+.ielts-test-content [class*="bg-muted"] {
+  background-color: hsl(var(--ielts-muted)) !important;
+  color: hsl(var(--ielts-fg)) !important;
+}
+
+/* Border colors */
+.ielts-test-content .ielts-border,
+.ielts-test-content [class*="border-border"] {
+  border-color: hsl(var(--ielts-border)) !important;
+}
+
+/* Input and form elements */
+.ielts-test-content input,
+.ielts-test-content textarea,
+.ielts-test-content select {
+  background-color: hsl(var(--ielts-input-bg)) !important;
+  color: hsl(var(--ielts-fg)) !important;
+  border-color: hsl(var(--ielts-border)) !important;
+}
+
+/* Radio buttons and checkboxes visual appearance */
+.ielts-test-content input[type="radio"],
+.ielts-test-content input[type="checkbox"] {
+  accent-color: hsl(var(--ielts-fg));
+}
+
+/* Question option backgrounds - more specific selector */
+.ielts-test-content .question-option {
+  background-color: transparent;
+  border-color: hsl(var(--ielts-border)) !important;
+}
+
+.ielts-test-content .question-option:hover {
+  background-color: hsl(var(--ielts-option-hover));
+}
+
+/* Muted text helper class */
+.ielts-test-content .ielts-muted-text,
+.ielts-test-content [class*="text-muted"] {
+  color: hsl(var(--ielts-muted-fg)) !important;
+}
+
+/* Passages and reading content */
+.ielts-test-content .reading-passage,
+.ielts-test-content .passage-content {
+  color: hsl(var(--ielts-fg)) !important;
+  font-size: var(--ielts-text-base);
+}
+
+/* Question text */
+.ielts-test-content .question-text {
+  color: hsl(var(--ielts-fg)) !important;
+  font-size: var(--ielts-text-base);
+}
+
+/* Ensure scrollbar respects theme */
+.ielts-test-content::-webkit-scrollbar-thumb {
+  background: hsl(var(--ielts-fg) / 0.3);
+}
+
+.ielts-test-content::-webkit-scrollbar-track {
+  background: hsl(var(--ielts-bg) / 0.5);
+}
+
+/* ResizableHandle styling for contrast themes */
+.ielts-test-content [data-panel-group-direction] {
+  background-color: hsl(var(--ielts-bg));
+}
+
+/* Default resize handle line */
+.ielts-test-content [data-resize-handle],
+.ielts-test-content [data-panel-resize-handle-id] {
+  background-color: hsl(var(--ielts-border)) !important;
+}
+
+/* Resize handle box styling for dark themes - gray by default */
+.ielts-theme-white-on-black [data-resize-handle] > div,
+.ielts-theme-yellow-on-black [data-resize-handle] > div {
+  background-color: hsl(0 0% 30%) !important;
+  border-color: hsl(0 0% 50%) !important;
+  transition: all 0.2s ease;
+}
+
+.ielts-theme-white-on-black [data-resize-handle] > div svg,
+.ielts-theme-yellow-on-black [data-resize-handle] > div svg {
+  color: hsl(0 0% 80%) !important;
+  transition: color 0.2s ease;
+}
+
+/* Resize handle box on hover - orange */
+.ielts-theme-white-on-black [data-resize-handle]:hover > div,
+.ielts-theme-yellow-on-black [data-resize-handle]:hover > div {
+  background-color: hsl(25 95% 53%) !important;
+  border-color: hsl(25 95% 53%) !important;
+}
+
+.ielts-theme-white-on-black [data-resize-handle]:hover > div svg,
+.ielts-theme-yellow-on-black [data-resize-handle]:hover > div svg {
+  color: hsl(0 0% 0%) !important;
+}
+
+/* Resize handle line for dark themes - gray default, orange on hover */
+.ielts-theme-white-on-black [data-resize-handle],
+.ielts-theme-white-on-black [data-panel-resize-handle-id],
+.ielts-theme-yellow-on-black [data-resize-handle],
+.ielts-theme-yellow-on-black [data-panel-resize-handle-id] {
+  background-color: hsl(0 0% 40%) !important;
+  transition: background-color 0.2s ease;
+}
+
+.ielts-theme-white-on-black [data-resize-handle]:hover,
+.ielts-theme-yellow-on-black [data-resize-handle]:hover {
+  background-color: hsl(25 95% 53%) !important;
+}
+
+/* Dropdown/Select trigger button styling for dark themes - dark bg, light text */
+.ielts-theme-white-on-black .ielts-test-content button[role="combobox"],
+.ielts-theme-white-on-black .ielts-test-content [data-radix-select-trigger] {
+  background-color: hsl(0 0% 8%) !important;
+  border-color: hsl(0 0% 40%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content button[role="combobox"],
+.ielts-theme-yellow-on-black .ielts-test-content [data-radix-select-trigger] {
+  background-color: hsl(0 0% 8%) !important;
+  border-color: hsl(0 0% 40%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Dropdown/Select popover content styling for dark themes - targets portals at body level */
+body.ielts-theme-white-on-black [data-radix-popper-content-wrapper],
+body.ielts-theme-white-on-black [data-radix-popper-content-wrapper] > div,
+body.ielts-theme-white-on-black [data-radix-select-content] {
+  background-color: hsl(0 0% 20%) !important;
+  border-color: hsl(0 0% 50%) !important;
+}
+
+body.ielts-theme-white-on-black [data-radix-select-content] {
+  color: hsl(0 0% 100%) !important;
+}
+
+body.ielts-theme-yellow-on-black [data-radix-popper-content-wrapper],
+body.ielts-theme-yellow-on-black [data-radix-popper-content-wrapper] > div,
+body.ielts-theme-yellow-on-black [data-radix-select-content] {
+  background-color: hsl(0 0% 20%) !important;
+  border-color: hsl(0 0% 50%) !important;
+}
+
+body.ielts-theme-yellow-on-black [data-radix-select-content] {
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Select dropdown items - body level for portals */
+body.ielts-theme-white-on-black [role="option"],
+body.ielts-theme-white-on-black [data-radix-select-item] {
+  color: hsl(0 0% 100%) !important;
+  background-color: transparent !important;
+}
+
+body.ielts-theme-white-on-black [role="option"]:hover,
+body.ielts-theme-white-on-black [role="option"][data-highlighted],
+body.ielts-theme-white-on-black [data-radix-select-item]:hover,
+body.ielts-theme-white-on-black [data-radix-select-item][data-highlighted] {
+  background-color: hsl(0 0% 30%) !important;
+}
+
+body.ielts-theme-yellow-on-black [role="option"],
+body.ielts-theme-yellow-on-black [data-radix-select-item] {
+  color: hsl(50 100% 50%) !important;
+  background-color: transparent !important;
+}
+
+body.ielts-theme-yellow-on-black [role="option"]:hover,
+body.ielts-theme-yellow-on-black [role="option"][data-highlighted],
+body.ielts-theme-yellow-on-black [data-radix-select-item]:hover,
+body.ielts-theme-yellow-on-black [data-radix-select-item][data-highlighted] {
+  background-color: hsl(0 0% 30%) !important;
+}
+
+/* Override prose colors for IELTS themes */
+.ielts-test-content .prose,
+.ielts-test-content .prose * {
+  color: inherit !important;
+}
+
+.ielts-test-content .prose strong,
+.ielts-test-content .prose b {
+  font-weight: bold;
+  color: inherit !important;
+}
+
+.ielts-test-content .prose em,
+.ielts-test-content .prose i {
+  color: inherit !important;
+}
+
+/* Button and interactive elements should keep their own colors */
+.ielts-test-content button:not(.question-option),
+.ielts-test-content .btn,
+.ielts-test-content [role="button"] {
+  /* Keep button styles */
+}
+
+/* Force visibility for ALL text elements in dark contrast modes */
+.ielts-theme-white-on-black .ielts-test-content,
+.ielts-theme-white-on-black .ielts-test-content *:not(.text-primary):not([class*="bg-primary"]):not(button) {
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content .ielts-muted-text,
+.ielts-theme-white-on-black .ielts-test-content [class*="text-muted"] {
+  color: hsl(0 0% 70%) !important;
+}
+
+/* Option labels and primary text - white in dark themes */
+.ielts-theme-white-on-black .ielts-test-content .text-primary,
+.ielts-theme-white-on-black .ielts-test-content span.text-primary {
+  color: hsl(0 0% 100%) !important;
+  background: none !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content,
+.ielts-theme-yellow-on-black .ielts-test-content *:not(.text-primary):not([class*="bg-primary"]):not(button) {
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .ielts-muted-text,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="text-muted"] {
+  color: hsl(50 80% 60%) !important;
+}
+
+/* Option labels and primary text - yellow in yellow-on-black theme */
+.ielts-theme-yellow-on-black .ielts-test-content .text-primary,
+.ielts-theme-yellow-on-black .ielts-test-content span.text-primary {
+  color: hsl(50 100% 50%) !important;
+  background: none !important;
+}
+
+/* Ensure background colors for panels */
+.ielts-theme-white-on-black .ielts-test-content .ielts-card,
+.ielts-theme-white-on-black .ielts-test-content .reading-passage,
+.ielts-theme-white-on-black .ielts-test-content [class*="bg-card"] {
+  background-color: hsl(0 0% 8%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content .ielts-muted,
+.ielts-theme-white-on-black .ielts-test-content .question-text,
+.ielts-theme-white-on-black .ielts-test-content [class*="bg-muted"] {
+  background-color: hsl(0 0% 12%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .ielts-card,
+.ielts-theme-yellow-on-black .ielts-test-content .reading-passage,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="bg-card"] {
+  background-color: hsl(0 0% 8%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .ielts-muted,
+.ielts-theme-yellow-on-black .ielts-test-content .question-text,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="bg-muted"] {
+  background-color: hsl(0 0% 12%) !important;
+}
+
+/* Ensure font-bold spans don't get block styling */
+.ielts-test-content span.font-bold {
+  display: inline;
+  background: transparent !important;
+}
+
+/* Navigation active question button styling for dark themes */
+.ielts-theme-white-on-black .nav-question-active,
+.ielts-theme-white-on-black .nav-question-btn.nav-question-active {
+  background-color: hsl(0 0% 0%) !important;
+  color: hsl(0 0% 100%) !important;
+  border-color: hsl(25 95% 53%) !important;
+}
+
+.ielts-theme-yellow-on-black .nav-question-active,
+.ielts-theme-yellow-on-black .nav-question-btn.nav-question-active {
+  background-color: hsl(0 0% 0%) !important;
+  color: hsl(50 100% 50%) !important;
+  border-color: hsl(25 95% 53%) !important;
+}
+
+/* Navigation footer styling for dark themes */
+.ielts-theme-white-on-black footer.bg-card,
+.ielts-theme-white-on-black .bg-card {
+  background-color: hsl(0 0% 8%) !important;
+}
+
+.ielts-theme-yellow-on-black footer.bg-card,
+.ielts-theme-yellow-on-black .bg-card {
+  background-color: hsl(0 0% 8%) !important;
+}
+
+/* Progress bar active state - white for dark themes */
+.ielts-theme-white-on-black .bg-primary,
+.ielts-theme-yellow-on-black .bg-primary {
+  background-color: hsl(0 0% 100%) !important;
+}
+
+/* Border primary color for dark themes - white */
+.ielts-theme-white-on-black .border-primary,
+.ielts-theme-yellow-on-black .border-primary {
+  border-color: hsl(0 0% 100%) !important;
+}
+
+/* Navigation buttons and arrows for dark themes - white background */
+.ielts-theme-white-on-black .ielts-test-content button.bg-primary,
+.ielts-theme-white-on-black .ielts-test-content .bg-primary {
+  background-color: hsl(0 0% 100%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content button.bg-primary,
+.ielts-theme-yellow-on-black .ielts-test-content .bg-primary {
+  background-color: hsl(0 0% 100%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+/* Dropdown trigger buttons with cyan/primary background - change to white */
+.ielts-theme-white-on-black .ielts-test-content button[role="combobox"].bg-primary,
+.ielts-theme-white-on-black .ielts-test-content .bg-primary[role="combobox"],
+.ielts-theme-yellow-on-black .ielts-test-content button[role="combobox"].bg-primary,
+.ielts-theme-yellow-on-black .ielts-test-content .bg-primary[role="combobox"] {
+  background-color: hsl(0 0% 100%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+/* Override any accent colors in dark themes to white */
+.ielts-theme-white-on-black .bg-accent,
+.ielts-theme-yellow-on-black .bg-accent {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+.ielts-theme-white-on-black .text-accent,
+.ielts-theme-yellow-on-black .text-accent {
+  color: hsl(0 0% 100%) !important;
+}
+
+/* Submit button in navigation - ensure visibility in dark themes */
+.ielts-theme-white-on-black footer button.bg-foreground,
+.ielts-theme-white-on-black .ielts-test-content footer button.bg-foreground {
+  background-color: hsl(0 0% 100%) !important;
+  color: hsl(0 0% 0%) !important;
+  border-color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black footer button.bg-muted,
+.ielts-theme-white-on-black .ielts-test-content footer button.bg-muted {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(0 0% 100%) !important;
+  border-color: hsl(0 0% 40%) !important;
+}
+
+.ielts-theme-yellow-on-black footer button.bg-foreground,
+.ielts-theme-yellow-on-black .ielts-test-content footer button.bg-foreground {
+  background-color: hsl(50 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+  border-color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black footer button.bg-muted,
+.ielts-theme-yellow-on-black .ielts-test-content footer button.bg-muted {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(50 100% 50%) !important;
+  border-color: hsl(0 0% 40%) !important;
+}
+
+/* Navigation arrow buttons (< >) for dark themes - ensure visibility */
+.ielts-theme-white-on-black .ielts-test-content button.bg-primary,
+.ielts-theme-white-on-black button.bg-primary {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content button.bg-primary:hover,
+.ielts-theme-white-on-black button.bg-primary:hover {
+  background-color: hsl(0 0% 35%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content button.bg-primary,
+.ielts-theme-yellow-on-black button.bg-primary {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content button.bg-primary:hover,
+.ielts-theme-yellow-on-black button.bg-primary:hover {
+  background-color: hsl(0 0% 35%) !important;
+}
+
+/* Highlight marks styling for dark themes - yellow and red highlights */
+.ielts-theme-white-on-black mark,
+.ielts-theme-white-on-black .ielts-test-content mark {
+  background-color: hsl(45 100% 40%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+.ielts-theme-yellow-on-black mark,
+.ielts-theme-yellow-on-black .ielts-test-content mark {
+  background-color: hsl(45 100% 40%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+/* Red/note highlights for dark themes */
+.ielts-theme-white-on-black mark.bg-red-200,
+.ielts-theme-white-on-black .ielts-test-content mark.bg-red-200 {
+  background-color: hsl(0 80% 45%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black mark.bg-red-200,
+.ielts-theme-yellow-on-black .ielts-test-content mark.bg-red-200 {
+  background-color: hsl(0 80% 45%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+/* Note input popup styling for dark themes */
+.ielts-theme-white-on-black .note-input-popup,
+.ielts-theme-white-on-black #note-input-popup {
+  background-color: hsl(0 0% 12%) !important;
+  border-color: hsl(0 0% 60%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .note-input-popup textarea,
+.ielts-theme-white-on-black #note-input-popup textarea {
+  background-color: hsl(0 0% 8%) !important;
+  border-color: hsl(0 0% 40%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .note-input-popup button,
+.ielts-theme-white-on-black #note-input-popup button {
+  background-color: hsl(0 0% 30%) !important;
+  color: hsl(0 0% 100%) !important;
+  border-color: hsl(0 0% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .note-input-popup,
+.ielts-theme-yellow-on-black #note-input-popup {
+  background-color: hsl(0 0% 12%) !important;
+  border-color: hsl(50 100% 50%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .note-input-popup textarea,
+.ielts-theme-yellow-on-black #note-input-popup textarea {
+  background-color: hsl(0 0% 8%) !important;
+  border-color: hsl(50 60% 30%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .note-input-popup button,
+.ielts-theme-yellow-on-black #note-input-popup button {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(50 100% 50%) !important;
+  border-color: hsl(50 60% 40%) !important;
+}
+
+/* Highlight toolbar and menu styling for dark themes */
+.ielts-theme-white-on-black #highlight-toolbar,
+.ielts-theme-white-on-black #highlight-menu {
+  background-color: hsl(0 0% 12%) !important;
+  border-color: hsl(0 0% 40%) !important;
+}
+
+.ielts-theme-white-on-black #highlight-toolbar button,
+.ielts-theme-white-on-black #highlight-menu button {
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black #highlight-toolbar,
+.ielts-theme-yellow-on-black #highlight-menu {
+  background-color: hsl(0 0% 12%) !important;
+  border-color: hsl(50 60% 40%) !important;
+}
+
+.ielts-theme-yellow-on-black #highlight-toolbar button,
+.ielts-theme-yellow-on-black #highlight-menu button {
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Note sidebar theming for dark themes */
+.ielts-theme-white-on-black [data-radix-dialog-content],
+.ielts-theme-white-on-black [role="dialog"],
+body.ielts-theme-white-on-black [data-radix-dialog-content],
+body.ielts-theme-white-on-black [role="dialog"] {
+  background-color: hsl(0 0% 8%) !important;
+  color: hsl(0 0% 100%) !important;
+  border-color: hsl(0 0% 30%) !important;
+}
+
+.ielts-theme-white-on-black [data-radix-dialog-content] .bg-card,
+body.ielts-theme-white-on-black [data-radix-dialog-content] .bg-card {
+  background-color: hsl(0 0% 15%) !important;
+}
+
+.ielts-theme-white-on-black [data-radix-dialog-content] .text-muted-foreground,
+body.ielts-theme-white-on-black [data-radix-dialog-content] .text-muted-foreground {
+  color: hsl(0 0% 70%) !important;
+}
+
+.ielts-theme-white-on-black [data-radix-dialog-content] .border,
+body.ielts-theme-white-on-black [data-radix-dialog-content] .border {
+  border-color: hsl(0 0% 30%) !important;
+}
+
+.ielts-theme-yellow-on-black [data-radix-dialog-content],
+.ielts-theme-yellow-on-black [role="dialog"],
+body.ielts-theme-yellow-on-black [data-radix-dialog-content],
+body.ielts-theme-yellow-on-black [role="dialog"] {
+  background-color: hsl(0 0% 8%) !important;
+  color: hsl(50 100% 50%) !important;
+  border-color: hsl(50 60% 30%) !important;
+}
+
+.ielts-theme-yellow-on-black [data-radix-dialog-content] .bg-card,
+body.ielts-theme-yellow-on-black [data-radix-dialog-content] .bg-card {
+  background-color: hsl(0 0% 15%) !important;
+}
+
+.ielts-theme-yellow-on-black [data-radix-dialog-content] .text-muted-foreground,
+body.ielts-theme-yellow-on-black [data-radix-dialog-content] .text-muted-foreground {
+  color: hsl(50 80% 60%) !important;
+}
+
+.ielts-theme-yellow-on-black [data-radix-dialog-content] .border,
+body.ielts-theme-yellow-on-black [data-radix-dialog-content] .border {
+  border-color: hsl(50 60% 30%) !important;
+}
+
+/* IELTS Official Header Styling */
+.ielts-header {
+  background-color: hsl(var(--ielts-card-bg, 0 0% 100%)) !important;
+}
+
+.ielts-logo {
+  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+}
+
+.ielts-test-info {
+  color: hsl(var(--ielts-fg, 0 0% 0%));
+}
+
+.ielts-icon-btn {
+  color: hsl(var(--ielts-fg, 0 0% 20%));
+}
+
+.ielts-icon-btn:hover {
+  background-color: hsl(var(--ielts-muted, 0 0% 95%));
+}
+
+.ielts-hamburger-btn {
+  color: hsl(var(--ielts-fg, 0 0% 20%));
+}
+
+/* IELTS Part Header - Official Inspera Style with beige/gray background */
+.ielts-part-header {
+  background-color: hsl(var(--ielts-section-bg, 45 20% 92%));
+  padding: 10px 16px;
+  margin: 0;
+  border-bottom: 1px solid hsl(0 0% 85%);
+}
+
+.ielts-part-header h2 {
+  font-weight: 700;
+  font-size: 14px;
+  color: hsl(var(--ielts-section-text, 0 0% 20%));
+  margin: 0 0 2px 0;
+  font-family: var(--font-ielts);
+  text-transform: none;
+}
+
+.ielts-part-header p {
+  font-size: 13px;
+  font-style: normal;
+  color: hsl(var(--ielts-section-text, 0 0% 20%));
+  margin: 0;
+  font-family: var(--font-ielts);
+  text-decoration: none;
+}
+
+/* IELTS Question Group Header - Official Inspera beige/gray style */
+.ielts-question-header {
+  background-color: hsl(var(--ielts-section-bg, 45 20% 92%));
+  padding: 10px 14px;
+  margin: 0 0 12px 0;
+  border-bottom: 1px solid hsl(0 0% 85%);
+}
+
+.ielts-question-header h3 {
+  font-weight: 700;
+  font-size: 14px;
+  color: hsl(var(--ielts-section-text, 0 0% 20%));
+  margin: 0 0 6px 0;
+  font-family: var(--font-ielts);
+}
+
+.ielts-question-header p,
+.ielts-question-header .instruction-text {
+  font-size: 13px;
+  color: hsl(var(--ielts-section-text, 0 0% 20%));
+  margin: 0;
+  font-family: var(--font-ielts);
+  line-height: 1.5;
+}
+
+/* IELTS Navigation Arrows */
+.ielts-nav-arrows {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ielts-nav-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(0 0% 70%);
+  background-color: hsl(0 0% 100%);
+  color: hsl(0 0% 30%);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ielts-nav-btn:hover:not(:disabled) {
+  background-color: hsl(0 0% 95%);
+  border-color: hsl(0 0% 50%);
+}
+
+.ielts-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ielts-nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Dark theme header adjustments */
+.ielts-theme-white-on-black .ielts-icon-btn,
+.ielts-theme-white-on-black .ielts-hamburger-btn {
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-icon-btn:hover {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-logo span {
+  color: #c8102e !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-icon-btn,
+.ielts-theme-yellow-on-black .ielts-hamburger-btn {
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-icon-btn:hover {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-logo span {
+  color: #c8102e !important;
+}
+
+/* Navigation arrows styling for IELTS - Official style: SQUARE with rounded corners, BOTH dark */
+.ielts-nav-arrow {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px; /* Square with rounded corners like official */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  background-color: hsl(0 0% 30%); /* Dark gray for both arrows */
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.ielts-nav-arrow:hover:not(:disabled) {
+  background-color: hsl(0 0% 20%);
+}
+
+/* Disabled state - light gray background (for first question) */
+.ielts-nav-arrow:disabled {
+  background-color: hsl(0 0% 75%);
+  color: hsl(0 0% 50%);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Primary (right arrow) - same dark background as left */
+.ielts-nav-arrow-primary {
+  background-color: hsl(0 0% 20%); /* Slightly darker */
+  color: white;
+}
+
+.ielts-nav-arrow-primary:hover:not(:disabled) {
+  background-color: hsl(0 0% 10%);
+}
+
+/* Dark theme navigation arrows */
+.ielts-theme-white-on-black .ielts-nav-arrow {
+  background-color: hsl(0 0% 25%);
+  color: hsl(0 0% 100%);
+}
+
+.ielts-theme-white-on-black .ielts-nav-arrow:disabled {
+  background-color: hsl(0 0% 15%);
+  color: hsl(0 0% 50%);
+}
+
+.ielts-theme-white-on-black .ielts-nav-arrow-primary {
+  background-color: hsl(0 0% 100%);
+  color: hsl(0 0% 0%);
+}
+
+.ielts-theme-yellow-on-black .ielts-nav-arrow {
+  background-color: hsl(0 0% 25%);
+  color: hsl(50 100% 50%);
+}
+
+.ielts-theme-yellow-on-black .ielts-nav-arrow:disabled {
+  background-color: hsl(0 0% 15%);
+  color: hsl(0 0% 40%);
+}
+
+.ielts-theme-yellow-on-black .ielts-nav-arrow-primary {
+  background-color: hsl(50 100% 50%);
+  color: hsl(0 0% 0%);
+}
+
+/* ===== DARK THEME INPUT STYLING - CRITICAL FOR VISIBILITY ===== */
+
+/* White on Black - Inputs */
+.ielts-theme-white-on-black .ielts-test-content input[type="text"],
+.ielts-theme-white-on-black .ielts-test-content .ielts-input {
+  background-color: hsl(0 0% 15%) !important;
+  color: hsl(0 0% 100%) !important;
+  border-color: hsl(0 0% 40%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content input[type="text"]::placeholder {
+  color: hsl(0 0% 60%) !important;
+}
+
+/* White on Black - Question number inside input */
+.ielts-theme-white-on-black .ielts-test-content input + span,
+.ielts-theme-white-on-black .ielts-test-content .ielts-input + span {
+  color: hsl(0 0% 100%) !important;
+}
+
+/* Yellow on Black - Inputs */
+.ielts-theme-yellow-on-black .ielts-test-content input[type="text"],
+.ielts-theme-yellow-on-black .ielts-test-content .ielts-input {
+  background-color: hsl(0 0% 15%) !important;
+  color: hsl(50 100% 50%) !important;
+  border-color: hsl(50 60% 30%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content input[type="text"]::placeholder {
+  color: hsl(50 80% 40%) !important;
+}
+
+/* Yellow on Black - Question number inside input */
+.ielts-theme-yellow-on-black .ielts-test-content input + span,
+.ielts-theme-yellow-on-black .ielts-test-content .ielts-input + span {
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Dark themes - Main content scrollable area */
+.ielts-theme-white-on-black .ielts-test-content .bg-white,
+.ielts-theme-white-on-black .ielts-test-content [class*="bg-white"] {
+  background-color: hsl(0 0% 0%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .bg-white,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="bg-white"] {
+  background-color: hsl(0 0% 0%) !important;
+}
+
+/* Dark themes - Part header styling */
+.ielts-theme-white-on-black .ielts-part-header,
+.ielts-theme-white-on-black .ielts-question-header {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 30%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-part-header h2,
+.ielts-theme-white-on-black .ielts-part-header p,
+.ielts-theme-white-on-black .ielts-question-header h3,
+.ielts-theme-white-on-black .ielts-question-header p,
+.ielts-theme-white-on-black .ielts-question-header .instruction-text {
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-part-header,
+.ielts-theme-yellow-on-black .ielts-question-header {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 30%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-part-header h2,
+.ielts-theme-yellow-on-black .ielts-part-header p,
+.ielts-theme-yellow-on-black .ielts-question-header h3,
+.ielts-theme-yellow-on-black .ielts-question-header p,
+.ielts-theme-yellow-on-black .ielts-question-header .instruction-text {
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Dark themes - Navigation arrows */
+.ielts-theme-white-on-black .ielts-nav-btn {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 40%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-nav-btn:hover:not(:disabled) {
+  background-color: hsl(0 0% 25%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-nav-btn {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 40%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-nav-btn:hover:not(:disabled) {
+  background-color: hsl(0 0% 25%) !important;
+}
+
+/* Dark themes - IELTS Question Number Badge */
+.ielts-theme-white-on-black .ielts-question-badge {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 60%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-question-badge {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(50 80% 50%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Dark themes - IELTS Input Fields */
+.ielts-theme-white-on-black .ielts-input,
+.ielts-theme-white-on-black .ielts-test-content .ielts-input {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 50%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-input:focus {
+  border-color: hsl(210 100% 60%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-input,
+.ielts-theme-yellow-on-black .ielts-test-content .ielts-input {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(50 80% 40%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-input:focus {
+  border-color: hsl(50 100% 50%) !important;
+}
+
+/* Dark themes - IELTS Drag & Drop Options */
+.ielts-theme-white-on-black .ielts-drag-option {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 50%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-drag-option:hover {
+  border-color: hsl(210 100% 60%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-drag-option {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(50 80% 40%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-drag-option:hover {
+  border-color: hsl(50 100% 50%) !important;
+}
+
+/* Dark themes - IELTS Drop Zones */
+.ielts-theme-white-on-black .ielts-drop-zone {
+  background-color: hsl(0 0% 10%) !important;
+  border-color: hsl(0 0% 40%) !important;
+  color: hsl(0 0% 70%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-drop-zone--filled {
+  background-color: hsl(0 0% 20%) !important;
+  border-color: hsl(0 0% 50%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-drop-zone {
+  background-color: hsl(0 0% 10%) !important;
+  border-color: hsl(50 60% 30%) !important;
+  color: hsl(50 80% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-drop-zone--filled {
+  background-color: hsl(0 0% 20%) !important;
+  border-color: hsl(50 80% 40%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Dark themes - MCQ Option styling */
+.ielts-theme-white-on-black .ielts-mcq-option {
+  background-color: transparent !important;
+  border-color: hsl(0 0% 30%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-mcq-option--selected {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-mcq-option {
+  background-color: transparent !important;
+  border-color: hsl(0 0% 30%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-mcq-option--selected {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+/* Dark themes - Table styling */
+.ielts-theme-white-on-black .ielts-test-content table,
+.ielts-theme-white-on-black .ielts-test-content th,
+.ielts-theme-white-on-black .ielts-test-content td {
+  background-color: hsl(0 0% 10%) !important;
+  border-color: hsl(0 0% 40%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content table,
+.ielts-theme-yellow-on-black .ielts-test-content th,
+.ielts-theme-yellow-on-black .ielts-test-content td {
+  background-color: hsl(0 0% 10%) !important;
+  border-color: hsl(50 60% 30%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content span.font-bold,
+.ielts-theme-white-on-black .ielts-test-content .text-foreground {
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content span.font-bold,
+.ielts-theme-yellow-on-black .ielts-test-content .text-foreground {
+  color: hsl(50 100% 50%) !important;
+}
+
+/* ===== DARK THEME HOVER STATES - FIX WHITISH CONTAINERS ===== */
+
+/* White on Black - Hover states */
+.ielts-theme-white-on-black .ielts-test-content .hover\:bg-gray-100:hover,
+.ielts-theme-white-on-black .ielts-test-content .hover\:bg-gray-50:hover,
+.ielts-theme-white-on-black .ielts-test-content .hover\:bg-muted:hover,
+.ielts-theme-white-on-black .ielts-test-content .hover\:bg-accent:hover,
+.ielts-theme-white-on-black .ielts-test-content [class*="hover:bg-"]:hover {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content .focus\:bg-gray-100:focus,
+.ielts-theme-white-on-black .ielts-test-content .focus\:bg-accent:focus,
+.ielts-theme-white-on-black .ielts-test-content [class*="focus:bg-"]:focus {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content .active\:bg-gray-200:active,
+.ielts-theme-white-on-black .ielts-test-content [class*="active:bg-"]:active {
+  background-color: hsl(0 0% 25%) !important;
+}
+
+/* White on Black - Radio/Checkbox containers */
+.ielts-theme-white-on-black .ielts-test-content label:hover,
+.ielts-theme-white-on-black .ielts-test-content .group:hover {
+  background-color: hsl(0 0% 15%) !important;
+}
+
+/* White on Black - Active/Selected states - subtle dark gray like official IELTS */
+.ielts-theme-white-on-black .ielts-test-content [data-state="checked"],
+.ielts-theme-white-on-black .ielts-test-content [aria-selected="true"] {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+/* White on Black - Radio/Checkbox indicator when checked */
+.ielts-theme-white-on-black .ielts-test-content .data-\[state\=checked\]\:bg-primary[data-state="checked"],
+.ielts-theme-white-on-black .ielts-test-content [data-state="checked"] .bg-primary,
+.ielts-theme-white-on-black .ielts-test-content [role="radio"][data-state="checked"],
+.ielts-theme-white-on-black .ielts-test-content [role="checkbox"][data-state="checked"] {
+  background-color: hsl(0 0% 100%) !important;
+  border-color: hsl(0 0% 100%) !important;
+}
+
+/* White on Black - Card hover - subtle darker gray */
+.ielts-theme-white-on-black .ielts-test-content .bg-card:hover,
+.ielts-theme-white-on-black .ielts-test-content .bg-background:hover {
+  background-color: hsl(0 0% 8%) !important;
+}
+
+/* Yellow on Black - Hover states */
+.ielts-theme-yellow-on-black .ielts-test-content .hover\:bg-gray-100:hover,
+.ielts-theme-yellow-on-black .ielts-test-content .hover\:bg-gray-50:hover,
+.ielts-theme-yellow-on-black .ielts-test-content .hover\:bg-muted:hover,
+.ielts-theme-yellow-on-black .ielts-test-content .hover\:bg-accent:hover,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="hover:bg-"]:hover {
+  background-color: hsl(0 0% 15%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .focus\:bg-gray-100:focus,
+.ielts-theme-yellow-on-black .ielts-test-content .focus\:bg-accent:focus,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="focus:bg-"]:focus {
+  background-color: hsl(0 0% 15%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .active\:bg-gray-200:active,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="active:bg-"]:active {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+/* Yellow on Black - Radio/Checkbox containers */
+.ielts-theme-yellow-on-black .ielts-test-content label:hover,
+.ielts-theme-yellow-on-black .ielts-test-content .group:hover {
+  background-color: hsl(0 0% 10%) !important;
+}
+
+/* Yellow on Black - Active/Selected states - subtle dark gray like official IELTS */
+.ielts-theme-yellow-on-black .ielts-test-content [data-state="checked"],
+.ielts-theme-yellow-on-black .ielts-test-content [aria-selected="true"] {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+/* Yellow on Black - Radio/Checkbox indicator when checked */
+.ielts-theme-yellow-on-black .ielts-test-content .data-\[state\=checked\]\:bg-primary[data-state="checked"],
+.ielts-theme-yellow-on-black .ielts-test-content [data-state="checked"] .bg-primary,
+.ielts-theme-yellow-on-black .ielts-test-content [role="radio"][data-state="checked"],
+.ielts-theme-yellow-on-black .ielts-test-content [role="checkbox"][data-state="checked"] {
+  background-color: hsl(50 100% 50%) !important;
+  border-color: hsl(50 100% 50%) !important;
+}
+
+/* Yellow on Black - Card hover */
+.ielts-theme-yellow-on-black .ielts-test-content .bg-card:hover,
+.ielts-theme-yellow-on-black .ielts-test-content .bg-background:hover {
+  background-color: hsl(0 0% 12%) !important;
+}
+
+/* Both dark themes - Ring focus states */
+.ielts-theme-white-on-black .ielts-test-content .ring-primary,
+.ielts-theme-white-on-black .ielts-test-content [class*="ring-"] {
+  --tw-ring-color: hsl(0 0% 60%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .ring-primary,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="ring-"] {
+  --tw-ring-color: hsl(50 80% 40%) !important;
+}
+
+/* Dark themes - Ensure borders don't become whitish */
+.ielts-theme-white-on-black .ielts-test-content .border,
+.ielts-theme-white-on-black .ielts-test-content [class*="border-"] {
+  border-color: hsl(0 0% 30%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .border,
+.ielts-theme-yellow-on-black .ielts-test-content [class*="border-"] {
+  border-color: hsl(50 40% 25%) !important;
+}
+
+/* ===== DARK THEME SELECT/DROPDOWN STYLING ===== */
+
+/* White on Black - Select dropdown and items */
+.ielts-theme-white-on-black [data-radix-popper-content-wrapper] [role="listbox"],
+.ielts-theme-white-on-black [data-radix-select-content],
+body.ielts-theme-white-on-black [data-radix-popper-content-wrapper] [role="listbox"],
+body.ielts-theme-white-on-black [data-radix-select-content] {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 40%) !important;
+}
+
+.ielts-theme-white-on-black [data-radix-select-item],
+body.ielts-theme-white-on-black [data-radix-select-item] {
+  color: hsl(0 0% 100%) !important;
+}
+
+.ielts-theme-white-on-black [data-radix-select-item]:hover,
+.ielts-theme-white-on-black [data-radix-select-item]:focus,
+.ielts-theme-white-on-black [data-radix-select-item][data-highlighted],
+body.ielts-theme-white-on-black [data-radix-select-item]:hover,
+body.ielts-theme-white-on-black [data-radix-select-item]:focus,
+body.ielts-theme-white-on-black [data-radix-select-item][data-highlighted] {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+/* Yellow on Black - Select dropdown and items */
+.ielts-theme-yellow-on-black [data-radix-popper-content-wrapper] [role="listbox"],
+.ielts-theme-yellow-on-black [data-radix-select-content],
+body.ielts-theme-yellow-on-black [data-radix-popper-content-wrapper] [role="listbox"],
+body.ielts-theme-yellow-on-black [data-radix-select-content] {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(50 60% 30%) !important;
+}
+
+.ielts-theme-yellow-on-black [data-radix-select-item],
+body.ielts-theme-yellow-on-black [data-radix-select-item] {
+  color: hsl(50 100% 50%) !important;
+}
+
+.ielts-theme-yellow-on-black [data-radix-select-item]:hover,
+.ielts-theme-yellow-on-black [data-radix-select-item]:focus,
+.ielts-theme-yellow-on-black [data-radix-select-item][data-highlighted],
+body.ielts-theme-yellow-on-black [data-radix-select-item]:hover,
+body.ielts-theme-yellow-on-black [data-radix-select-item]:focus,
+body.ielts-theme-yellow-on-black [data-radix-select-item][data-highlighted] {
+  background-color: hsl(0 0% 25%) !important;
+  color: hsl(50 100% 50%) !important;
+}
+
+/* ===== DARK THEME HIGHLIGHT STYLING - ORANGE ===== */
+
+/* White on Black - Highlights */
+.ielts-theme-white-on-black .ielts-highlight,
+.ielts-theme-white-on-black .ielts-highlight-note,
+.ielts-theme-white-on-black mark,
+body.ielts-theme-white-on-black .ielts-highlight,
+body.ielts-theme-white-on-black .ielts-highlight-note,
+body.ielts-theme-white-on-black mark {
+  background-color: hsl(30 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+/* Yellow on Black - Highlights */
+.ielts-theme-yellow-on-black .ielts-highlight,
+.ielts-theme-yellow-on-black .ielts-highlight-note,
+.ielts-theme-yellow-on-black mark,
+body.ielts-theme-yellow-on-black .ielts-highlight,
+body.ielts-theme-yellow-on-black .ielts-highlight-note,
+body.ielts-theme-yellow-on-black mark {
+  background-color: hsl(30 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+}
+
+/* ===== DARK THEME QUESTION CARD STYLING ===== */
+
+/* White on Black - Question cards bg-card and bg-muted */
+.ielts-theme-white-on-black .ielts-test-content .bg-card,
+.ielts-theme-white-on-black .ielts-test-content .bg-muted,
+.ielts-theme-white-on-black .ielts-test-content .bg-muted\/30 {
+  background-color: hsl(0 0% 10%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content .bg-card:hover,
+.ielts-theme-white-on-black .ielts-test-content .hover\:border-primary\/50:hover {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 50%) !important;
+}
+
+/* Yellow on Black - Question cards bg-card and bg-muted */
+.ielts-theme-yellow-on-black .ielts-test-content .bg-card,
+.ielts-theme-yellow-on-black .ielts-test-content .bg-muted,
+.ielts-theme-yellow-on-black .ielts-test-content .bg-muted\/30 {
+  background-color: hsl(0 0% 10%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .bg-card:hover,
+.ielts-theme-yellow-on-black .ielts-test-content .hover\:border-primary\/50:hover {
+  background-color: hsl(0 0% 15%) !important;
+  border-color: hsl(50 60% 40%) !important;
+}
+
+/* ===== DARK THEME ACCENT/FOCUS BACKGROUNDS ===== */
+
+/* White on Black - accent backgrounds */
+.ielts-theme-white-on-black .focus\:bg-accent:focus,
+.ielts-theme-white-on-black [class*="focus:bg-accent"]:focus,
+body.ielts-theme-white-on-black .focus\:bg-accent:focus,
+body.ielts-theme-white-on-black [class*="focus:bg-accent"]:focus {
+  background-color: hsl(0 0% 25%) !important;
+}
+
+/* Yellow on Black - accent backgrounds */
+.ielts-theme-yellow-on-black .focus\:bg-accent:focus,
+.ielts-theme-yellow-on-black [class*="focus:bg-accent"]:focus,
+body.ielts-theme-yellow-on-black .focus\:bg-accent:focus,
+body.ielts-theme-yellow-on-black [class*="focus:bg-accent"]:focus {
+  background-color: hsl(0 0% 25%) !important;
+}
+
+/* ===== DARK THEME PRIMARY BADGE/NUMBER STYLING ===== */
+
+/* White on Black - primary/10 background */
+.ielts-theme-white-on-black .ielts-test-content .bg-primary\/10 {
+  background-color: hsl(0 0% 25%) !important;
+}
+
+.ielts-theme-white-on-black .ielts-test-content .text-primary {
+  color: hsl(0 0% 100%) !important;
+}
+
+/* Yellow on Black - primary/10 background */
+.ielts-theme-yellow-on-black .ielts-test-content .bg-primary\/10 {
+  background-color: hsl(50 40% 20%) !important;
+}
+
+.ielts-theme-yellow-on-black .ielts-test-content .text-primary {
+  color: hsl(50 100% 50%) !important;
+}
+
+/* ===== IELTS MCQ OPTION - Official Style ===== */
+.ielts-mcq-option {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  background: transparent;
+  transition: background-color 150ms ease;
+}
+
+/* Hover effect - light gray/blue background like official IELTS */
+.ielts-mcq-option:hover:not(.ielts-mcq-option--selected) {
+  background-color: hsl(200 30% 94%);
+}
+
+/* Selected state - light blue background like official IELTS */
+.ielts-mcq-option--selected {
+  background-color: hsl(200 60% 90%);
+}
+
+/* Keep content above any pseudo elements */
+.ielts-mcq-option > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Radio indicator - official IELTS circular style */
+.ielts-mcq-indicator {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid hsl(0 0% 50%);
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* Selected radio - filled center dot */
+.ielts-mcq-indicator--selected,
+.ielts-mcq-indicator[data-state="checked"] {
+  border-color: hsl(var(--primary));
+  background-color: transparent;
+}
+
+.ielts-mcq-indicator--selected span,
+.ielts-mcq-indicator[data-state="checked"] span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary));
+}
+
+/* ===== IELTS Checkbox - Official Square Style with Tick ===== */
+.ielts-checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  border: 1px solid hsl(0 0% 50%);
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.ielts-checkbox[data-state="checked"] {
+  border-color: hsl(190 100% 35%);
+  background-color: hsl(190 100% 35%);
+}
+
+.ielts-checkbox[data-state="checked"] svg {
+  color: white;
+}
+
+/* dark theme overrides for radio */
+body.ielts-theme-white-on-black .ielts-mcq-indicator {
+  border-color: hsl(0 0% 45%) !important;
+  background-color: transparent !important;
+}
+body.ielts-theme-white-on-black .ielts-mcq-indicator--selected,
+body.ielts-theme-white-on-black .ielts-mcq-indicator[data-state="checked"] {
+  border-color: hsl(190 100% 45%) !important;
+}
+
+body.ielts-theme-yellow-on-black .ielts-mcq-indicator {
+  border-color: hsl(50 40% 30%) !important;
+  background-color: transparent !important;
+}
+body.ielts-theme-yellow-on-black .ielts-mcq-indicator--selected,
+body.ielts-theme-yellow-on-black .ielts-mcq-indicator[data-state="checked"] {
+  border-color: hsl(190 100% 45%) !important;
+}
+
+/* dark theme overrides for checkbox */
+body.ielts-theme-white-on-black .ielts-checkbox {
+  border-color: hsl(0 0% 45%) !important;
+}
+body.ielts-theme-white-on-black .ielts-checkbox[data-state="checked"] {
+  border-color: hsl(190 100% 45%) !important;
+  background-color: hsl(190 100% 45%) !important;
+}
+
+body.ielts-theme-yellow-on-black .ielts-checkbox {
+  border-color: hsl(50 40% 30%) !important;
+}
+body.ielts-theme-yellow-on-black .ielts-checkbox[data-state="checked"] {
+  border-color: hsl(190 100% 45%) !important;
+  background-color: hsl(190 100% 45%) !important;
+}
+
+/* dark theme overrides for option backgrounds */
+body.ielts-theme-white-on-black .ielts-mcq-option:hover:not(.ielts-mcq-option--selected) {
+  background-color: hsl(0 0% 18%) !important;
+}
+body.ielts-theme-white-on-black .ielts-mcq-option--selected {
+  background-color: hsl(200 40% 20%) !important;
+}
+
+body.ielts-theme-yellow-on-black .ielts-mcq-option:hover:not(.ielts-mcq-option--selected) {
+  background-color: hsl(0 0% 18%) !important;
+}
+body.ielts-theme-yellow-on-black .ielts-mcq-option--selected {
+  background-color: hsl(50 30% 20%) !important;
+}
+
+/* ===== IELTS Question Number Badge - Official Blue Border Style ===== */
+.ielts-question-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  border: 2px solid hsl(200 80% 50%);
+  border-radius: 3px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* Active/current question - filled blue */
+.ielts-question-number--active {
+  background-color: hsl(200 80% 50%);
+  color: white;
+}
+
+/* ===== IELTS Input Field - Official Style ===== */
+.ielts-input {
+  width: 140px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid hsl(var(--ielts-input-border));
+  border-radius: 3px;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  transition: border-color 0.2s ease;
+}
+
+.ielts-input:focus {
+  outline: none;
+  border-color: hsl(var(--ielts-input-focus));
+}
+
+.ielts-input::placeholder {
+  text-align: center;
+  font-weight: 700;
+  color: hsl(var(--foreground) / 0.7);
+}
+
+/* ===== IELTS Question Row - Official Clean Style ===== */
+.ielts-question-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+}
+
+.ielts-question-row--active {
+  background-color: transparent;
+}
+
+/* ===== IELTS Question Group Instruction ===== */
+.ielts-question-instruction {
+  font-size: 14px;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+  margin-bottom: 16px;
+}
+
+.ielts-question-instruction strong {
+  font-weight: 700;
+}
