@@ -127,6 +127,7 @@ export default function ListeningTest() {
   const [showAudioOverlay, setShowAudioOverlay] = useState(true);
   const [testStarted, setTestStarted] = useState(false);
   const hasAutoSubmitted = useRef(false);
+  const [mobileView, setMobileView] = useState<'questions' | 'audio'>('questions');
 
   const questionTypeMap: Record<string, string> = {
     // URL slug -> DB/renderer type (normalized)
@@ -649,18 +650,18 @@ export default function ListeningTest() {
         {/* Fixed Container for Header and Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header - IELTS Official Style */}
-        <header className="border-b px-4 py-3 flex items-center justify-between ielts-card ielts-header">
+        <header className="border-b px-2 md:px-4 py-1 md:py-3 flex items-center justify-between ielts-card ielts-header">
           {/* Left - IELTS Logo and Test Taker ID */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <div className="ielts-logo">
-              <span className="text-xl font-black tracking-tight text-[#c8102e]">IELTS</span>
+              <span className="text-lg md:text-xl font-black tracking-tight text-[#c8102e]">IELTS</span>
             </div>
             <span className="text-sm font-medium ielts-test-info hidden md:inline">Test taker ID</span>
           </div>
 
-          {/* Center - Seamless Audio Player (official IELTS timing) */}
+          {/* Center - Seamless Audio Player (official IELTS timing) - hidden on mobile */}
           {(test.audio_url || test.audio_url_part1 || test.audio_url_part2 || test.audio_url_part3 || test.audio_url_part4) && (
-            <div className="flex-1 max-w-xl mx-4">
+            <div className="hidden md:block flex-1 max-w-xl mx-4">
               <WebAudioScheduledPlayer 
                 audioUrls={{
                   part1: test.audio_url_part1 || test.audio_url,
@@ -683,7 +684,7 @@ export default function ListeningTest() {
           )}
 
           {/* Right - Timer, Notes, and Menu */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 md:gap-3">
             <ListeningTimer 
               timeLeft={timeLeft} 
               setTimeLeft={setTimeLeft} 
@@ -734,79 +735,160 @@ export default function ListeningTest() {
             </div>
           )}
 
+          {/* Mobile Part/Questions Tabs - compact, right below header - hidden on desktop */}
+          <div className="md:hidden flex border-b border-border bg-muted/40">
+            {LISTENING_PART_RANGES.map((part, idx) => (
+              <button
+                key={part.label}
+                className={cn(
+                  "flex-1 py-1.5 text-xs font-medium text-center transition-colors",
+                  idx === activePartIndex && mobileView === 'questions'
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                )}
+                onClick={() => {
+                  setActivePartIndex(idx);
+                  setMobileView('questions');
+                  setCurrentQuestion(part.start);
+                }}
+              >
+                Part {idx + 1}
+              </button>
+            ))}
+            <button
+              className={cn(
+                "flex-1 py-1.5 text-xs font-medium text-center transition-colors",
+                mobileView === 'audio'
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              )}
+              onClick={() => setMobileView('audio')}
+            >
+              Audio
+            </button>
+          </div>
+
           {/* Part Header - IELTS Official Style with teal left border */}
-          <div className="ielts-part-header">
+          <div className="ielts-part-header hidden md:block">
             <h2>{currentPart.label}</h2>
             <p className="not-italic">Listen and answer questions {currentPart.start}–{currentPart.end}.</p>
           </div>
 
           {/* Main Content */}
-          <div className="h-[calc(100vh-180px)] min-h-0">
-            <ResizablePanelGroup direction="horizontal" className="h-full">
-              <ResizablePanel defaultSize={100} minSize={100} maxSize={100}>
-                <div className="h-full flex flex-col relative">
-                  <div 
-                    className={cn(
-                      "flex-1 overflow-y-auto overflow-x-hidden p-6 pb-20 bg-white",
-                      "scrollbar-thin scrollbar-thumb-[hsl(0_0%_75%)] scrollbar-track-transparent hover:scrollbar-thumb-[hsl(0_0%_60%)]",
-                      "font-[var(--font-ielts)] text-foreground"
-                    )}
-                  >
-                    <ListeningQuestions 
-                      testId={testId!}
-                      questions={questions.filter(q => q.question_number >= currentPart.start && q.question_number <= currentPart.end)}
-                      questionGroups={questionGroups.filter(g => g.start_question >= currentPart.start && g.end_question <= currentPart.end)}
-                      answers={answers}
-                      onAnswerChange={handleAnswerChange}
-                      currentQuestion={currentQuestion}
-                      setCurrentQuestion={setCurrentQuestion}
-                      fontSize={14}
-                      renderRichText={renderRichText}
-                    />
-                  </div>
-                  
-                  {/* Floating Navigation Arrows - positioned immediately above bottom nav */}
-                  <div className="absolute bottom-2 right-4 flex items-center gap-2 z-10">
-                    <button 
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {/* Desktop: Full questions view */}
+            <div className="hidden md:block h-full">
+              <ResizablePanelGroup direction="horizontal" className="h-full">
+                <ResizablePanel defaultSize={100} minSize={100} maxSize={100}>
+                  <div className="h-full flex flex-col relative">
+                    <div 
                       className={cn(
-                        "ielts-nav-arrow",
-                        currentQuestion === displayQuestions[0]?.question_number && "opacity-40 cursor-not-allowed"
+                        "flex-1 overflow-y-auto overflow-x-hidden p-6 pb-20 bg-white",
+                        "scrollbar-thin scrollbar-thumb-[hsl(0_0%_75%)] scrollbar-track-transparent hover:scrollbar-thumb-[hsl(0_0%_60%)]",
+                        "font-[var(--font-ielts)] text-foreground"
                       )}
-                      onClick={() => {
-                        const idx = displayQuestions.findIndex(q => q.question_number === currentQuestion);
-                        if (idx > 0) {
-                          const prevQ = displayQuestions[idx - 1];
-                          setCurrentQuestion(prevQ.question_number);
-                          const partIdx = LISTENING_PART_RANGES.findIndex(
-                            r => prevQ.question_number >= r.start && prevQ.question_number <= r.end
-                          );
-                          if (partIdx !== -1) setActivePartIndex(partIdx);
-                        }
-                      }}
-                      disabled={currentQuestion === displayQuestions[0]?.question_number}
                     >
-                      <ArrowLeft size={24} strokeWidth={2.5} />
-                    </button>
-                    <button 
-                      className="ielts-nav-arrow ielts-nav-arrow-primary"
-                      onClick={() => {
-                        const idx = displayQuestions.findIndex(q => q.question_number === currentQuestion);
-                        if (idx < displayQuestions.length - 1) {
-                          const nextQ = displayQuestions[idx + 1];
-                          setCurrentQuestion(nextQ.question_number);
-                          const partIdx = LISTENING_PART_RANGES.findIndex(
-                            r => nextQ.question_number >= r.start && nextQ.question_number <= r.end
-                          );
-                          if (partIdx !== -1) setActivePartIndex(partIdx);
-                        }
-                      }}
-                    >
-                      <ArrowRight size={24} strokeWidth={2.5} />
-                    </button>
+                      <ListeningQuestions 
+                        testId={testId!}
+                        questions={questions.filter(q => q.question_number >= currentPart.start && q.question_number <= currentPart.end)}
+                        questionGroups={questionGroups.filter(g => g.start_question >= currentPart.start && g.end_question <= currentPart.end)}
+                        answers={answers}
+                        onAnswerChange={handleAnswerChange}
+                        currentQuestion={currentQuestion}
+                        setCurrentQuestion={setCurrentQuestion}
+                        fontSize={14}
+                        renderRichText={renderRichText}
+                      />
+                    </div>
+                    
+                    {/* Floating Navigation Arrows - positioned immediately above bottom nav */}
+                    <div className="absolute bottom-2 right-4 flex items-center gap-2 z-10">
+                      <button 
+                        className={cn(
+                          "ielts-nav-arrow",
+                          currentQuestion === displayQuestions[0]?.question_number && "opacity-40 cursor-not-allowed"
+                        )}
+                        onClick={() => {
+                          const idx = displayQuestions.findIndex(q => q.question_number === currentQuestion);
+                          if (idx > 0) {
+                            const prevQ = displayQuestions[idx - 1];
+                            setCurrentQuestion(prevQ.question_number);
+                            const partIdx = LISTENING_PART_RANGES.findIndex(
+                              r => prevQ.question_number >= r.start && prevQ.question_number <= r.end
+                            );
+                            if (partIdx !== -1) setActivePartIndex(partIdx);
+                          }
+                        }}
+                        disabled={currentQuestion === displayQuestions[0]?.question_number}
+                      >
+                        <ArrowLeft size={24} strokeWidth={2.5} />
+                      </button>
+                      <button 
+                        className="ielts-nav-arrow ielts-nav-arrow-primary"
+                        onClick={() => {
+                          const idx = displayQuestions.findIndex(q => q.question_number === currentQuestion);
+                          if (idx < displayQuestions.length - 1) {
+                            const nextQ = displayQuestions[idx + 1];
+                            setCurrentQuestion(nextQ.question_number);
+                            const partIdx = LISTENING_PART_RANGES.findIndex(
+                              r => nextQ.question_number >= r.start && nextQ.question_number <= r.end
+                            );
+                            if (partIdx !== -1) setActivePartIndex(partIdx);
+                          }
+                        }}
+                      >
+                        <ArrowRight size={24} strokeWidth={2.5} />
+                      </button>
+                    </div>
                   </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </div>
+
+            {/* Mobile: Switch between Questions and Audio based on mobileView */}
+            <div className="md:hidden h-full flex flex-col">
+              {mobileView === 'questions' ? (
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-20 bg-white font-[var(--font-ielts)] text-foreground">
+                  <ListeningQuestions 
+                    testId={testId!}
+                    questions={questions.filter(q => q.question_number >= currentPart.start && q.question_number <= currentPart.end)}
+                    questionGroups={questionGroups.filter(g => g.start_question >= currentPart.start && g.end_question <= currentPart.end)}
+                    answers={answers}
+                    onAnswerChange={handleAnswerChange}
+                    currentQuestion={currentQuestion}
+                    setCurrentQuestion={setCurrentQuestion}
+                    fontSize={14}
+                    renderRichText={renderRichText}
+                  />
                 </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white">
+                  <p className="text-sm text-muted-foreground mb-4">Audio Player</p>
+                  {(test.audio_url || test.audio_url_part1 || test.audio_url_part2 || test.audio_url_part3 || test.audio_url_part4) && (
+                    <div className="w-full max-w-md">
+                      <WebAudioScheduledPlayer 
+                        audioUrls={{
+                          part1: test.audio_url_part1 || test.audio_url,
+                          part2: test.audio_url_part2,
+                          part3: test.audio_url_part3,
+                          part4: test.audio_url_part4,
+                        }}
+                        initialStartTime={initialStartTime}
+                        initialPart={initialPart}
+                        onPartChange={(partNumber: number) => {
+                          const partRange = LISTENING_PART_RANGES[partNumber - 1];
+                          if (partRange) {
+                            setCurrentQuestion(partRange.start);
+                            setActivePartIndex(partNumber - 1);
+                          }
+                        }}
+                        onTestComplete={handleTestComplete}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
