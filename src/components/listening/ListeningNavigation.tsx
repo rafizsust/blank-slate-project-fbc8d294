@@ -49,7 +49,6 @@ const SEGMENT_GAP = 1.5;
 const QUESTION_BUTTON_SIZE = 25; // Square buttons
 const MOBILE_VISIBLE_ITEMS = 9; // More items visible on mobile
 const PART_LABEL_MIN_WIDTH = 60;
-const PART_LABEL_MIN_WIDTH_MOBILE = 16; // Minimal on mobile since text is hidden
 const NAV_HORIZONTAL_PADDING = 12;
 const NAV_HORIZONTAL_PADDING_MOBILE = 4; // Tighter on mobile
 
@@ -361,9 +360,12 @@ export function ListeningNavigation({
                 {isActive ? (
                   /* Active part bars - sliding window on mobile */
                   <div className="flex items-center">
-                    <div 
-                      className={cn("shrink-0", p.complete ? "bg-green-600" : "bg-[#c8c8c8]")}
-                      style={{ width: isMobile ? PART_LABEL_MIN_WIDTH_MOBILE : PART_LABEL_MIN_WIDTH, height: BAR_HEIGHT }}
+                    <div
+                      className={cn(
+                        "hidden md:block shrink-0",
+                        p.complete ? "bg-green-600" : "bg-[#c8c8c8]",
+                      )}
+                      style={{ width: PART_LABEL_MIN_WIDTH, height: BAR_HEIGHT }}
                     />
                     {(() => {
                       const { visibleItems, hasMore } = getMobileVisibleItems(p.items);
@@ -435,21 +437,23 @@ export function ListeningNavigation({
                   <div className="flex min-w-0 flex-col">
                     {/* Content row: Part label + question numbers */}
                     <div className="flex items-center">
-                      {/* Part label */}
+                      {/* Part label - desktop only */}
                       <button
                         onClick={() => handlePartClick(p.index)}
                         aria-label={p.title}
                         className={cn(
-                          "shrink-0 flex items-center justify-start text-sm font-semibold whitespace-nowrap",
-                          p.complete ? "text-green-600" : "text-foreground"
+                          "hidden md:flex shrink-0 items-center justify-start text-sm font-semibold whitespace-nowrap",
+                          p.complete ? "text-green-600" : "text-foreground",
                         )}
-                        style={{ 
-                          width: isMobile ? PART_LABEL_MIN_WIDTH_MOBILE : PART_LABEL_MIN_WIDTH,
+                        style={{
+                          width: PART_LABEL_MIN_WIDTH,
                           height: QUESTION_BUTTON_SIZE,
                         }}
                       >
-                        {p.complete && <Check size={14} className="mr-1 text-green-600" strokeWidth={2.5} />}
-                        <span className="hidden md:inline">{p.title}</span>
+                        {p.complete && (
+                          <Check size={14} className="mr-1 text-green-600" strokeWidth={2.5} />
+                        )}
+                        <span>{p.title}</span>
                       </button>
                       
                       {/* Question numbers - aligned with bars above (sliding window on mobile) */}
