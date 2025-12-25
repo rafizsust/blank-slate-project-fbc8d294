@@ -268,6 +268,25 @@ export function ListeningQuestions({
               </div>
             )}
 
+            {/* Map Labeling - Fallback text-based for AI practice (no image) */}
+            {group.question_type === 'MAP_LABELING' && !group.options?.imageUrl && group.options?.map_labels && (
+              <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+                <h4 className="text-sm font-semibold mb-3 text-foreground">Map Description:</h4>
+                {group.options.map_description && (
+                  <p className="text-sm text-muted-foreground mb-4">{group.options.map_description}</p>
+                )}
+                <h4 className="text-sm font-semibold mb-2 text-foreground">Locations:</h4>
+                <div className="grid gap-2">
+                  {group.options.map_labels.map((label: { id: string; text: string }) => (
+                    <div key={label.id} className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-primary">{label.id}:</span>
+                      <span className="text-foreground">{label.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Matching Correct Letter - Group Options Display */}
             {group.question_type === 'MATCHING_CORRECT_LETTER' && group.options?.options && group.options.options.length > 0 && (
               <div className="mb-6">

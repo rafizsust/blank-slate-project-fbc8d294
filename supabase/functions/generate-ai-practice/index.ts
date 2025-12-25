@@ -917,10 +917,25 @@ serve(async (req) => {
         groupOptions = { options: parsed.options, option_format: 'A' };
       } else if (questionType === 'TABLE_COMPLETION' && parsed.table_data) {
         groupOptions = { table_data: parsed.table_data };
-      } else if (questionType === 'FLOWCHART_COMPLETION') {
+      } else if (questionType === 'FLOWCHART_COMPLETION' && parsed.flowchart_steps) {
+        // Map flowchart_steps to the format expected by FlowchartCompletion component
+        // Component expects: steps[].text, steps[].hasBlank, steps[].blankNumber
+        const steps = parsed.flowchart_steps.map((step: any) => ({
+          text: step.label || step.text || '',
+          hasBlank: step.isBlank || step.hasBlank || false,
+          blankNumber: step.questionNumber || step.blankNumber,
+          alignment: step.alignment || 'center',
+        }));
+        // Component also needs options array for drag-and-drop
+        // Extract correct answers as the option pool + add distractors
+        const correctAnswers = parsed.questions?.map((q: any) => q.correct_answer) || [];
+        const distractors = ['Other option', 'Alternative choice']; // fallback distractors
+        const flowchartOptions = [...new Set([...correctAnswers, ...distractors])];
         groupOptions = {
-          flowchart_title: parsed.flowchart_title,
-          flowchart_steps: parsed.flowchart_steps,
+          title: parsed.flowchart_title,
+          steps,
+          options: flowchartOptions,
+          option_format: 'A',
         };
       } else if (questionType === 'DRAG_AND_DROP_OPTIONS') {
         // UI expects group.options.options (array of strings) + option_format
