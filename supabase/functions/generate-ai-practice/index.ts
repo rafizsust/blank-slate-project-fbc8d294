@@ -105,6 +105,106 @@ async function callGemini(apiKey: string, prompt: string): Promise<string | null
   return null;
 }
 
+// Generate map image using Lovable AI Gateway
+async function generateMapImage(mapDescription: string, mapLabels: Array<{id: string; text: string}>): Promise<string | null> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.error('LOVABLE_API_KEY not configured');
+    return null;
+  }
+
+  try {
+    console.log('Generating map image with Lovable AI...');
+    
+    // Build a detailed prompt for map generation
+    const labelsList = mapLabels.map(l => `${l.id}: ${l.text}`).join(', ');
+    const imagePrompt = `Create a simple, clean map diagram for an IELTS listening test. 
+The map shows: ${mapDescription}
+Include these labeled locations: ${labelsList}
+Style: Top-down view, simple line art with clear labels (A, B, C, etc.), easy to read, educational diagram style.
+Make it look like a professional test map with clear pathways and building outlines.`;
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-image-preview',
+        messages: [
+          { role: 'user', content: imagePrompt }
+        ],
+        modalities: ['image', 'text'],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Map image generation failed:', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    if (imageData && imageData.startsWith('data:image/')) {
+      console.log('Map image generated successfully');
+      return imageData;
+    }
+    
+    console.error('No image data in response');
+    return null;
+  } catch (err) {
+    console.error('Map image generation error:', err);
+    return null;
+  }
+}
+
+// Upload base64 image to Supabase storage and return public URL
+async function uploadMapImage(
+  supabaseClient: any, 
+  imageDataUrl: string, 
+  testId: string
+): Promise<string | null> {
+  try {
+    // Extract base64 data and mime type
+    const matches = imageDataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) {
+      console.error('Invalid image data URL format');
+      return null;
+    }
+    
+    const [, extension, base64Data] = matches;
+    const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    
+    const fileName = `ai-practice-maps/${testId}-${Date.now()}.${extension}`;
+    
+    const { data, error } = await supabaseClient.storage
+      .from('listening-images')
+      .upload(fileName, binaryData, {
+        contentType: `image/${extension}`,
+        upsert: true,
+      });
+    
+    if (error) {
+      console.error('Failed to upload map image:', error);
+      return null;
+    }
+    
+    // Get public URL
+    const { data: urlData } = supabaseClient.storage
+      .from('listening-images')
+      .getPublicUrl(fileName);
+    
+    console.log('Map image uploaded:', urlData.publicUrl);
+    return urlData.publicUrl;
+  } catch (err) {
+    console.error('Map image upload error:', err);
+    return null;
+  }
+}
+
 // Generate TTS audio using Gemini with retry logic for transient errors
 async function generateAudio(apiKey: string, script: string, maxRetries = 3): Promise<{ audioBase64: string; sampleRate: number } | null> {
   const ttsPrompt = `Read the following conversation slowly and clearly, as if for a language listening test. 
@@ -941,9 +1041,33 @@ serve(async (req) => {
         // UI expects group.options.options (array of strings) + option_format
         groupOptions = { options: parsed.drag_options || [], option_format: 'A' };
       } else if (questionType === 'MAP_LABELING') {
+        // Generate map image using Lovable AI
+        let mapImageUrl: string | undefined;
+        if (parsed.map_description && parsed.map_labels) {
+          console.log('Generating map image for MAP_LABELING...');
+          const mapImageData = await generateMapImage(parsed.map_description, parsed.map_labels);
+          if (mapImageData) {
+            const uploadedUrl = await uploadMapImage(supabaseClient, mapImageData, testId);
+            if (uploadedUrl) {
+              mapImageUrl = uploadedUrl;
+            }
+          }
+        }
+        
         groupOptions = {
           map_description: parsed.map_description,
           map_labels: parsed.map_labels,
+          imageUrl: mapImageUrl,
+          // Add drop zones based on questions for visual placement
+          dropZones: (parsed.questions || []).map((q: any, idx: number) => ({
+            id: `zone-${q.question_number || idx + 1}`,
+            questionNumber: q.question_number || idx + 1,
+            x: 20 + (idx % 3) * 30, // Distribute across map
+            y: 20 + Math.floor(idx / 3) * 25,
+            width: 60,
+            height: 30,
+          })),
+          options: parsed.map_labels?.map((l: any) => l.id) || [],
         };
       } else if (questionType === 'NOTE_COMPLETION' && parsed.note_sections) {
         // Map note_sections to noteCategories format expected by NoteStyleFillInBlank
