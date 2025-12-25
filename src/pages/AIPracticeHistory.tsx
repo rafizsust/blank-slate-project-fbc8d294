@@ -124,6 +124,9 @@ export default function AIPracticeHistory() {
       timeMinutes: test.time_minutes,
       totalQuestions: test.total_questions,
       generatedAt: test.generated_at,
+      audioUrl: (test as any).audio_url ?? undefined,
+      audioFormat: (test as any).audio_format ?? undefined,
+      sampleRate: (test as any).sample_rate ?? undefined,
       ...payload,
     };
 

@@ -166,6 +166,7 @@ export interface GeneratedTest {
   timeMinutes: number;
   passage?: GeneratedPassage; // For reading
   audioBase64?: string; // For listening (kept in memory only)
+  audioUrl?: string; // Persisted URL for history/retake
   audioFormat?: string;
   sampleRate?: number;
   transcript?: string; // For listening
@@ -234,6 +235,37 @@ function stripBase64Data(test: GeneratedTest): GeneratedTest {
 // Supabase helpers (async)
 // ─────────────────────────────────────────────────────────────────────────────
 
+function pcmToWav(pcmData: Uint8Array, sampleRate: number): Blob {
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const wavHeaderSize = 44;
+  const wavBuffer = new ArrayBuffer(wavHeaderSize + pcmData.length);
+  const view = new DataView(wavBuffer);
+
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + pcmData.length, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, 'data');
+  view.setUint32(40, pcmData.length, true);
+  new Uint8Array(wavBuffer).set(pcmData, 44);
+
+  return new Blob([wavBuffer], { type: 'audio/wav' });
+}
+
 /** Persist a newly generated test to Supabase and keep full version in memory. */
 export async function saveGeneratedTestAsync(test: GeneratedTest, userId: string): Promise<void> {
   // Keep full test in memory for immediate playback
@@ -241,7 +273,8 @@ export async function saveGeneratedTestAsync(test: GeneratedTest, userId: string
 
   const strippedTest = stripBase64Data(test);
 
-  const { error } = await supabase.from('ai_practice_tests').insert({
+  // Insert the stripped test first
+  const { error: insertError } = await supabase.from('ai_practice_tests').insert({
     id: test.id,
     user_id: userId,
     module: test.module,
@@ -252,13 +285,50 @@ export async function saveGeneratedTestAsync(test: GeneratedTest, userId: string
     total_questions: test.totalQuestions,
     generated_at: test.generatedAt,
     payload: strippedTest as unknown as Json,
-    audio_url: null, // we don't upload audio for now
+    audio_url: null,
     audio_format: test.audioFormat ?? null,
     sample_rate: test.sampleRate ?? null,
   });
 
-  if (error) {
-    console.error('Failed to save AI practice test to Supabase:', error);
+  if (insertError) {
+    console.error('Failed to save AI practice test to Supabase:', insertError);
+    return;
+  }
+
+  // If this is a listening test, upload a WAV so history/retake can play audio.
+  if (test.module === 'listening' && test.audioBase64) {
+    try {
+      const pcmBytes = Uint8Array.from(atob(test.audioBase64), (c) => c.charCodeAt(0));
+      const wavBlob = pcmToWav(pcmBytes, test.sampleRate || 24000);
+      const path = `ai-practice/${userId}/${test.id}.wav`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('listening-audios')
+        .upload(path, wavBlob, { contentType: 'audio/wav', upsert: true });
+
+      if (uploadError) {
+        console.error('Failed to upload AI practice listening audio:', uploadError);
+        return;
+      }
+
+      const publicUrl = supabase.storage.from('listening-audios').getPublicUrl(path).data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from('ai_practice_tests')
+        .update({ audio_url: publicUrl })
+        .eq('id', test.id)
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Failed to persist audio_url for AI practice listening test:', updateError);
+        return;
+      }
+
+      // Update cache so immediate navigation also has audioUrl
+      currentTestCache = { ...(currentTestCache ?? test), audioUrl: publicUrl };
+    } catch (err) {
+      console.error('Failed to convert/upload AI practice audio:', err);
+    }
   }
 }
 
@@ -288,6 +358,7 @@ export async function loadGeneratedTestsAsync(userId: string): Promise<Generated
       timeMinutes: row.time_minutes,
       totalQuestions: row.total_questions,
       generatedAt: row.generated_at,
+      audioUrl: (row as any).audio_url ?? undefined,
       audioFormat: row.audio_format ?? undefined,
       sampleRate: row.sample_rate ?? undefined,
     };
@@ -329,6 +400,7 @@ export async function loadGeneratedTestAsync(testId: string): Promise<GeneratedT
     timeMinutes: data.time_minutes,
     totalQuestions: data.total_questions,
     generatedAt: data.generated_at,
+    audioUrl: (data as any).audio_url ?? undefined,
     audioFormat: data.audio_format ?? undefined,
     sampleRate: data.sample_rate ?? undefined,
   };

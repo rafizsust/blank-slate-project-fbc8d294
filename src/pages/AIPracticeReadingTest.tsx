@@ -239,9 +239,9 @@ export default function AIPracticeReadingTest() {
       questionResults,
     };
 
-    // Save result to Supabase (async)
+    // Save result to Supabase
     if (user) {
-      savePracticeResultAsync(result, user.id, 'reading');
+      await savePracticeResultAsync(result, user.id, 'reading');
     }
     navigate(`/ai-practice/results/${test.id}`);
   };

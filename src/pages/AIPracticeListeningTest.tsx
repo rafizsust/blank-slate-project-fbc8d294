@@ -163,10 +163,11 @@ export default function AIPracticeListeningTest() {
         const wavBlob = pcmToWav(pcmBytes, loadedTest.sampleRate || 24000);
         const url = URL.createObjectURL(wavBlob);
         audioUrlRef.current = url;
-        
+
         const audio = new Audio(url);
         audioRef.current = audio;
 
+        audio.playbackRate = playbackSpeed;
         audio.addEventListener('canplaythrough', () => setAudioReady(true));
         audio.addEventListener('timeupdate', () => {
           setAudioProgress((audio.currentTime / audio.duration) * 100 || 0);
@@ -176,6 +177,17 @@ export default function AIPracticeListeningTest() {
       } catch {
         setAudioError('Audio generation failed. You can still practice with the transcript.');
       }
+    } else if (loadedTest.audioUrl) {
+      const audio = new Audio(loadedTest.audioUrl);
+      audioRef.current = audio;
+
+      audio.playbackRate = playbackSpeed;
+      audio.addEventListener('canplaythrough', () => setAudioReady(true));
+      audio.addEventListener('timeupdate', () => {
+        setAudioProgress((audio.currentTime / audio.duration) * 100 || 0);
+      });
+      audio.addEventListener('ended', () => setIsPlaying(false));
+      audio.addEventListener('error', () => setAudioError('Failed to load audio'));
     } else {
       setAudioError('Audio not available. You can practice with the transcript below.');
     }
@@ -291,19 +303,19 @@ export default function AIPracticeListeningTest() {
     setIsPlaying(false);
 
     const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
-    
+
     const questionResults: QuestionResult[] = questions.map(q => {
       const userAnswer = answers[q.question_number]?.trim() || '';
       const correctAnswer = q.correct_answer;
-      
+
       const normalizedUser = userAnswer.toLowerCase().trim();
       const acceptableAnswers = correctAnswer.split('/').map(a => a.trim().toLowerCase());
       const isCorrect = acceptableAnswers.some(a => a === normalizedUser);
-      
+
       const originalQ = test.questionGroups?.flatMap(g => g.questions).find(
         oq => oq.question_number === q.question_number
       );
-      
+
       return {
         questionNumber: q.question_number,
         userAnswer,
@@ -316,7 +328,7 @@ export default function AIPracticeListeningTest() {
     const score = questionResults.filter(r => r.isCorrect).length;
     const total = questionResults.length;
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
-    
+
     const calculateBandScore = (pct: number): number => {
       if (pct >= 93) return 9;
       if (pct >= 85) return 8.5;
@@ -348,8 +360,9 @@ export default function AIPracticeListeningTest() {
     };
 
     if (user) {
-      savePracticeResultAsync(result, user.id, 'listening');
+      await savePracticeResultAsync(result, user.id, 'listening');
     }
+
     navigate(`/ai-practice/results/${test.id}`);
   };
 

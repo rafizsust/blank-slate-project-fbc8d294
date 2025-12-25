@@ -5,12 +5,14 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  loadGeneratedTest, 
-  loadPracticeResults,
+import {
+  loadGeneratedTestAsync,
+  loadPracticeResultsAsync,
   GeneratedTest,
-  PracticeResult 
+  PracticeResult,
 } from '@/types/aiPractice';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -28,7 +30,8 @@ import { cn } from '@/lib/utils';
 export default function AIPracticeResults() {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
-  
+  const { user, loading: authLoading } = useAuth();
+
   const [test, setTest] = useState<GeneratedTest | null>(null);
   const [result, setResult] = useState<PracticeResult | null>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
@@ -39,26 +42,59 @@ export default function AIPracticeResults() {
       return;
     }
 
-    const loadedTest = loadGeneratedTest(testId);
-    const results = loadPracticeResults();
-    const matchingResult = results.find(r => r.testId === testId);
+    if (authLoading) return;
 
-    if (!loadedTest || !matchingResult) {
+    if (!user) {
+      toast.error('Please sign in to view your results');
       navigate('/ai-practice');
       return;
     }
 
-    setTest(loadedTest);
-    setResult(matchingResult);
-    
-    // Expand incorrect answers by default
-    const incorrectSet = new Set(
-      matchingResult.questionResults
-        .filter(q => !q.isCorrect)
-        .map(q => q.questionNumber)
-    );
-    setExpandedQuestions(incorrectSet);
-  }, [testId, navigate]);
+    let cancelled = false;
+
+    const run = async () => {
+      const loadedTest = await loadGeneratedTestAsync(testId);
+      if (!loadedTest) {
+        toast.error('Test not found');
+        navigate('/ai-practice');
+        return;
+      }
+
+      // The result insert is async; retry briefly so the results page is reliable.
+      let matchingResult: PracticeResult | undefined;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const results = await loadPracticeResultsAsync(user.id);
+        matchingResult = results.find(r => r.testId === testId);
+        if (matchingResult) break;
+        await new Promise(r => setTimeout(r, 750));
+      }
+
+      if (cancelled) return;
+
+      if (!matchingResult) {
+        toast.error('Results not found yet. Please try again.');
+        navigate('/ai-practice');
+        return;
+      }
+
+      setTest(loadedTest);
+      setResult(matchingResult);
+
+      // Expand incorrect answers by default
+      const incorrectSet = new Set(
+        matchingResult.questionResults
+          .filter(q => !q.isCorrect)
+          .map(q => q.questionNumber)
+      );
+      setExpandedQuestions(incorrectSet);
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [testId, navigate, user, authLoading]);
 
   const toggleQuestion = (qNum: number) => {
     setExpandedQuestions(prev => {
