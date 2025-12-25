@@ -638,7 +638,13 @@ Return ONLY valid JSON in this exact format:
 }`;
 
     case 'DRAG_AND_DROP_OPTIONS':
-      return basePrompt + `2. Create ${questionCount} drag-and-drop matching questions.
+      return basePrompt + `2. Create ${questionCount} drag-and-drop questions.
+
+IMPORTANT UI REQUIREMENTS:
+- Each question MUST include a drop zone indicated by 2+ consecutive underscores (e.g., "____").
+- Use this exact pattern in question_text so the UI can render a drop box:
+  "<Item> ____ ." or "Drop answer ____ here." (must contain "____").
+- The draggable options MUST be provided via drag_options.
 
 Return ONLY valid JSON in this exact format:
 {
@@ -646,8 +652,8 @@ Return ONLY valid JSON in this exact format:
   "instruction": "Match each person to their responsibility. Drag the correct option to each box.",
   "drag_options": ["Managing budget", "Training staff", "Customer service", "Quality control", "Marketing"],
   "questions": [
-    {"question_number": 1, "question_text": "John", "correct_answer": "Managing budget", "explanation": "John is responsible for budget"},
-    {"question_number": 2, "question_text": "Sarah", "correct_answer": "Training staff", "explanation": "Sarah handles training"}
+    {"question_number": 1, "question_text": "John ____ .", "correct_answer": "Managing budget", "explanation": "John is responsible for budget"},
+    {"question_number": 2, "question_text": "Sarah ____ .", "correct_answer": "Training staff", "explanation": "Sarah handles training"}
   ]
 }`;
 
@@ -879,33 +885,58 @@ serve(async (req) => {
       } else if (questionType === 'TABLE_COMPLETION' && parsed.table_data) {
         groupOptions = { table_data: parsed.table_data };
       } else if (questionType === 'FLOWCHART_COMPLETION') {
-        groupOptions = { 
+        groupOptions = {
           flowchart_title: parsed.flowchart_title,
-          flowchart_steps: parsed.flowchart_steps 
+          flowchart_steps: parsed.flowchart_steps,
         };
       } else if (questionType === 'DRAG_AND_DROP_OPTIONS') {
-        groupOptions = { drag_options: parsed.drag_options };
+        // UI expects group.options.options (array of strings) + option_format
+        groupOptions = { options: parsed.drag_options || [], option_format: 'A' };
       } else if (questionType === 'MAP_LABELING') {
-        groupOptions = { 
+        groupOptions = {
           map_description: parsed.map_description,
-          map_labels: parsed.map_labels 
+          map_labels: parsed.map_labels,
         };
       } else if (questionType.includes('MULTIPLE_CHOICE') && parsed.questions?.[0]?.options) {
         groupOptions = { options: parsed.questions[0].options };
       }
 
       const groupId = crypto.randomUUID();
-      const questions = (parsed.questions || []).map((q: any, i: number) => ({
-        id: crypto.randomUUID(),
-        question_number: q.question_number || i + 1,
-        question_text: q.question_text,
-        question_type: questionType,
-        correct_answer: q.correct_answer,
-        explanation: q.explanation,
-        options: q.options || null,
-        heading: q.heading || null,
-        max_answers: q.max_answers || undefined,
-      }));
+
+      // For DRAG_AND_DROP_OPTIONS, store correct answers as option LABELS (A/B/C...) to match UI answer values
+      const dragOptionLabels = (groupOptions?.options || []).map((_: unknown, idx: number) => String.fromCharCode(65 + idx));
+      const dragTextToLabel = new Map<string, string>();
+      if (questionType === 'DRAG_AND_DROP_OPTIONS') {
+        (groupOptions?.options || []).forEach((t: string, idx: number) => {
+          dragTextToLabel.set(String(t).trim().toLowerCase(), dragOptionLabels[idx]);
+        });
+      }
+
+      const questions = (parsed.questions || []).map((q: any, i: number) => {
+        let correct = q.correct_answer;
+        if (questionType === 'DRAG_AND_DROP_OPTIONS') {
+          const asString = String(q.correct_answer ?? '').trim();
+          const upper = asString.toUpperCase();
+          // If Gemini already returned a label, keep it; otherwise map option text -> label
+          if (upper.length === 1 && dragOptionLabels.includes(upper)) {
+            correct = upper;
+          } else {
+            correct = dragTextToLabel.get(asString.toLowerCase()) || asString;
+          }
+        }
+
+        return {
+          id: crypto.randomUUID(),
+          question_number: q.question_number || i + 1,
+          question_text: q.question_text,
+          question_type: questionType,
+          correct_answer: correct,
+          explanation: q.explanation,
+          options: q.options || null,
+          heading: q.heading || null,
+          max_answers: q.max_answers || undefined,
+        };
+      });
 
       return new Response(JSON.stringify({
         testId,
