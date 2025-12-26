@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.evaluate-ai-practice-writing]
 verify_jwt = true
+
+[functions.explain-answer-followup]
+verify_jwt = true

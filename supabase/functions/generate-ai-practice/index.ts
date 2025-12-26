@@ -347,9 +347,41 @@ ${script}`;
   return null;
 }
 
+// Reading configuration interface
+interface ReadingConfig {
+  passagePreset?: string;
+  paragraphCount?: number;
+  wordCount?: number;
+  useWordCountMode?: boolean;
+}
+
 // Reading question type prompts - generate structured data matching DB schema
-function getReadingPrompt(questionType: string, topic: string, difficulty: string, questionCount: number): string {
+function getReadingPrompt(
+  questionType: string, 
+  topic: string, 
+  difficulty: string, 
+  questionCount: number,
+  readingConfig?: ReadingConfig
+): string {
   const difficultyDesc = difficulty === 'easy' ? 'Band 5-6' : difficulty === 'medium' ? 'Band 6-7' : 'Band 7-8';
+  
+  // Determine passage specifications based on config
+  let paragraphCount = readingConfig?.paragraphCount || 6;
+  let wordCount = readingConfig?.wordCount || 750;
+  
+  // If using word count mode, estimate paragraphs (avg ~100-120 words per paragraph)
+  if (readingConfig?.useWordCountMode && readingConfig.wordCount) {
+    paragraphCount = Math.max(3, Math.min(10, Math.ceil(wordCount / 110)));
+  } else if (!readingConfig?.useWordCountMode && readingConfig?.paragraphCount) {
+    // If using paragraph mode, estimate word count
+    wordCount = paragraphCount * 110;
+  }
+
+  // Generate paragraph labels
+  const paragraphLabels = Array.from({ length: paragraphCount }, (_, i) => 
+    String.fromCharCode(65 + i) // A, B, C, ...
+  );
+  const labelList = paragraphLabels.map(l => `[${l}]`).join(', ');
   
   const basePrompt = `Generate an IELTS Academic Reading test with the following specifications:
 
@@ -357,9 +389,12 @@ Topic: ${topic}
 Difficulty: ${difficulty} (${difficultyDesc})
 
 Requirements:
-1. Create a reading passage of 500-700 words that is:
+1. Create a reading passage with these specifications:
+   - Total word count: approximately ${wordCount} words (strict: between ${wordCount - 50} and ${wordCount + 100} words)
+   - Number of paragraphs: ${paragraphCount} paragraphs, labeled ${labelList}
+   - Each paragraph should be 80-150 words (official IELTS standard)
    - Academic in tone and style
-   - Well-structured with clear paragraphs labeled [A], [B], [C], [D], [E], [F]
+   - Well-structured with clear paragraph labels [A], [B], etc.
    - Contains specific information that can be tested
    - Appropriate for the ${difficulty} difficulty level
 
@@ -952,16 +987,19 @@ serve(async (req) => {
     const geminiApiKey = await decryptApiKey(secretData.encrypted_value, appEncryptionKey);
 
     // Parse request
-    const { module, questionType, difficulty, topicPreference, questionCount, timeMinutes } = await req.json();
+    const { module, questionType, difficulty, topicPreference, questionCount, timeMinutes, readingConfig } = await req.json();
     
     const topic = topicPreference || IELTS_TOPICS[Math.floor(Math.random() * IELTS_TOPICS.length)];
     const testId = crypto.randomUUID();
 
     console.log(`Generating ${module} test: ${questionType}, ${difficulty}, topic: ${topic}, questions: ${questionCount}`);
+    if (readingConfig) {
+      console.log(`Reading config: paragraphs=${readingConfig.paragraphCount}, words=${readingConfig.wordCount}, preset=${readingConfig.passagePreset}`);
+    }
 
     if (module === 'reading') {
       // Generate Reading Test with specific question type prompt
-      const readingPrompt = getReadingPrompt(questionType, topic, difficulty, questionCount);
+      const readingPrompt = getReadingPrompt(questionType, topic, difficulty, questionCount, readingConfig);
 
       const result = await callGemini(geminiApiKey, readingPrompt);
       if (!result) {

@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-
+import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AILoadingScreen } from '@/components/common/AILoadingScreen';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -88,6 +89,15 @@ const DIFFICULTY_OPTIONS: { value: DifficultyLevel; label: string; color: string
   { value: 'hard', label: 'Hard', color: 'bg-destructive/20 text-destructive border-destructive/30' },
 ];
 
+// Official IELTS Reading passage specifications
+// Academic: 700-950 words per passage, typically 5-8 paragraphs
+const READING_PASSAGE_PRESETS = {
+  short: { paragraphs: 4, wordCount: 500, label: 'Short (500 words, 4 paragraphs)' },
+  medium: { paragraphs: 6, wordCount: 750, label: 'Medium (750 words, 6 paragraphs)' },
+  standard: { paragraphs: 7, wordCount: 900, label: 'IELTS Standard (900 words, 7 paragraphs)' },
+  custom: { paragraphs: 0, wordCount: 0, label: 'Custom' },
+};
+
 export default function AIPractice() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -101,8 +111,15 @@ export default function AIPractice() {
   const [speakingPartType, setSpeakingPartType] = useState<SpeakingPartType>('FULL_TEST');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [topicPreference, setTopicPreference] = useState('');
-  const [timeMinutes, setTimeMinutes] = useState(5);
+  const [timeMinutes, setTimeMinutes] = useState(10);
   const [audioSpeed, setAudioSpeed] = useState(1);
+
+  // Reading-specific configuration
+  const [readingPassagePreset, setReadingPassagePreset] = useState<keyof typeof READING_PASSAGE_PRESETS>('standard');
+  const [customParagraphCount, setCustomParagraphCount] = useState(6);
+  const [customWordCount, setCustomWordCount] = useState(750);
+  const [useWordCountMode, setUseWordCountMode] = useState(false); // false = paragraph mode, true = word count mode
+  const [customQuestionCount, setCustomQuestionCount] = useState(5);
 
   // Loading state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -112,7 +129,11 @@ export default function AIPractice() {
     : activeModule === 'listening' ? listeningQuestionType
     : activeModule === 'writing' ? writingTaskType
     : speakingPartType;
-  const questionCount = QUESTION_COUNTS[currentQuestionType] || 5;
+  
+  // For reading, use custom question count; for others, use predefined counts
+  const questionCount = activeModule === 'reading' 
+    ? customQuestionCount 
+    : (QUESTION_COUNTS[currentQuestionType] || 5);
 
   const progressSteps = activeModule === 'reading' 
     ? ['Analyzing topic', 'Generating passage', 'Creating questions', 'Preparing explanations', 'Finalizing']
@@ -145,6 +166,18 @@ export default function AIPractice() {
     }, 3000);
 
     try {
+      // Build reading-specific configuration
+      const readingConfig = activeModule === 'reading' ? {
+        passagePreset: readingPassagePreset,
+        paragraphCount: readingPassagePreset === 'custom' 
+          ? (useWordCountMode ? undefined : customParagraphCount)
+          : READING_PASSAGE_PRESETS[readingPassagePreset].paragraphs,
+        wordCount: readingPassagePreset === 'custom'
+          ? (useWordCountMode ? customWordCount : undefined)
+          : READING_PASSAGE_PRESETS[readingPassagePreset].wordCount,
+        useWordCountMode: readingPassagePreset === 'custom' ? useWordCountMode : false,
+      } : undefined;
+
       const { data, error } = await supabase.functions.invoke('generate-ai-practice', {
         body: {
           module: activeModule,
@@ -153,6 +186,7 @@ export default function AIPractice() {
           topicPreference: topicPreference.trim() || undefined,
           questionCount,
           timeMinutes,
+          readingConfig,
         },
       });
 
@@ -313,7 +347,8 @@ export default function AIPractice() {
                     Reading Practice Configuration
                   </CardTitle>
                   <CardDescription>
-                    Generate a reading passage with questions tailored to your skill level
+                    Generate a reading passage with questions tailored to your skill level. 
+                    Official IELTS passages are 700-950 words with 5-8 paragraphs.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -333,11 +368,119 @@ export default function AIPractice() {
                         >
                           <div className="font-medium">{type.label}</div>
                           <div className="text-sm text-muted-foreground">{type.description}</div>
-                          <Badge variant="secondary" className="mt-2">
-                            {QUESTION_COUNTS[type.value]} questions
-                          </Badge>
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Passage Configuration */}
+                  <div className="space-y-4 border-t pt-6">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Settings2 className="w-4 h-4" />
+                      Passage Configuration
+                    </Label>
+                    
+                    {/* Preset Selection */}
+                    <RadioGroup 
+                      value={readingPassagePreset} 
+                      onValueChange={(v) => setReadingPassagePreset(v as keyof typeof READING_PASSAGE_PRESETS)}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                    >
+                      {Object.entries(READING_PASSAGE_PRESETS).map(([key, preset]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <RadioGroupItem value={key} id={`preset-${key}`} />
+                          <Label htmlFor={`preset-${key}`} className="cursor-pointer">
+                            {preset.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+
+                    {/* Custom Options (shown when custom is selected) */}
+                    {readingPassagePreset === 'custom' && (
+                      <div className="space-y-4 pl-4 border-l-2 border-primary/30">
+                        {/* Mode Toggle */}
+                        <div className="flex items-center gap-4">
+                          <span className={`text-sm ${!useWordCountMode ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
+                            By Paragraphs
+                          </span>
+                          <Switch
+                            checked={useWordCountMode}
+                            onCheckedChange={setUseWordCountMode}
+                          />
+                          <span className={`text-sm ${useWordCountMode ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
+                            By Word Count
+                          </span>
+                        </div>
+
+                        {!useWordCountMode ? (
+                          /* Paragraph Count Slider */
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label>Number of Paragraphs</Label>
+                              <Badge variant="outline">{customParagraphCount} paragraphs</Badge>
+                            </div>
+                            <Slider
+                              value={[customParagraphCount]}
+                              onValueChange={([v]) => setCustomParagraphCount(v)}
+                              min={2}
+                              max={10}
+                              step={1}
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>2 (Short)</span>
+                              <span>6 (Standard)</span>
+                              <span>10 (Long)</span>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Word Count Slider */
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label>Target Word Count</Label>
+                              <Badge variant="outline">{customWordCount} words</Badge>
+                            </div>
+                            <Slider
+                              value={[customWordCount]}
+                              onValueChange={([v]) => setCustomWordCount(v)}
+                              min={300}
+                              max={1200}
+                              step={50}
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>300 (Short)</span>
+                              <span>750 (Standard)</span>
+                              <span>1200 (Max)</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Official IELTS Academic passages: 700-950 words
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Question Count */}
+                  <div className="space-y-3 border-t pt-6">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-medium flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Number of Questions
+                      </Label>
+                      <Badge variant="secondary">{customQuestionCount} questions</Badge>
+                    </div>
+                    <Slider
+                      value={[customQuestionCount]}
+                      onValueChange={([v]) => setCustomQuestionCount(v)}
+                      min={1}
+                      max={10}
+                      step={1}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1 (Quick)</span>
+                      <span>5 (Standard)</span>
+                      <span>10 (Comprehensive)</span>
                     </div>
                   </div>
                 </CardContent>
@@ -540,15 +683,25 @@ export default function AIPractice() {
                   value={[timeMinutes]}
                   onValueChange={([v]) => setTimeMinutes(v)}
                   min={2}
-                  max={10}
-                  step={1}
+                  max={activeModule === 'reading' ? 60 : 10}
+                  step={activeModule === 'reading' ? 5 : 1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>2 min</span>
-                  <span>Recommended: {Math.min(10, getDefaultTime(questionCount))} min</span>
-                  <span>10 min</span>
+                  <span>
+                    {activeModule === 'reading' 
+                      ? `Recommended: ${Math.ceil(customQuestionCount * 2)} min`
+                      : `Recommended: ${Math.min(10, getDefaultTime(questionCount))} min`
+                    }
+                  </span>
+                  <span>{activeModule === 'reading' ? '60 min' : '10 min'}</span>
                 </div>
+                {activeModule === 'reading' && (
+                  <p className="text-xs text-muted-foreground">
+                    Official IELTS allows 60 minutes for all 3 reading passages (40 questions)
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
