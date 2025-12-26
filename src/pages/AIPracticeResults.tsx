@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   loadGeneratedTestAsync,
   loadPracticeResultsAsync,
@@ -490,7 +489,7 @@ export default function AIPracticeResults() {
                                 
                                 {/* Chat Messages */}
                                 {chatState.messages.length > 0 && (
-                                  <ScrollArea className="max-h-[500px] pr-2">
+                                  <div className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                                     <div className="space-y-3">
                                       {chatState.messages.map((msg) => (
                                         <div
@@ -534,7 +533,7 @@ export default function AIPracticeResults() {
                                       )}
                                       <div ref={el => chatEndRefs.current[qResult.questionNumber] = el} />
                                     </div>
-                                  </ScrollArea>
+                                  </div>
                                 )}
 
                                 {/* Suggested Questions */}

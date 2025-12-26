@@ -798,14 +798,16 @@ Return ONLY valid JSON in this exact format:
 
     case 'MAP_LABELING':
       return basePrompt + `2. Create a map/diagram labeling task with ${questionCount} labels to identify.
-   - The passage should describe locations or parts of a place/facility
-   - Generate labels for different areas
+   - The passage should describe locations or parts of a place/facility in detail
+   - Each question asks which labeled area (A, B, C, etc.) matches a description
+   - IMPORTANT: The passage MUST clearly state which label corresponds to which location
+   - Make sure answers are definitively correct based on the passage content
 
 Return ONLY valid JSON in this exact format:
 {
   "passage": {
     "title": "The title of the passage",
-    "content": "The full passage text describing a location with labeled areas [A], [B], etc."
+    "content": "The full passage text describing a location. Example: 'The reception area, labeled A on the map, is the first stop for visitors. The computer lab, marked as C, provides internet access. Study rooms are designated as B and offer quiet spaces.'"
   },
   "instruction": "Label the map below. Choose the correct letter, A-H.",
   "map_description": "A floor plan of a library showing: reception (A), study rooms (B), computer lab (C), café (D), meeting rooms (E), quiet zone (F), children's section (G), magazine area (H)",
@@ -820,8 +822,8 @@ Return ONLY valid JSON in this exact format:
     {"id": "H", "text": "Magazine Area"}
   ],
   "questions": [
-    {"question_number": 1, "question_text": "Where can visitors access the internet?", "correct_answer": "C", "explanation": "The computer lab provides internet access"},
-    {"question_number": 2, "question_text": "Where should visitors go first when entering?", "correct_answer": "A", "explanation": "Reception is the first point of contact"}
+    {"question_number": 1, "question_text": "Where can visitors access the internet?", "correct_answer": "C", "explanation": "The passage states 'The computer lab, marked as C, provides internet access.'"},
+    {"question_number": 2, "question_text": "Where should visitors go first when entering?", "correct_answer": "A", "explanation": "The passage states 'The reception area, labeled A on the map, is the first stop for visitors.'"}
   ]
 }`;
 
