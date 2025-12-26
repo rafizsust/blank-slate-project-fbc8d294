@@ -65,7 +65,12 @@ const LISTENING_SCENARIOS = [
 // Gemini models to try (with fallback)
 const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
+// Store last error for better error messages
+let lastGeminiError: string | null = null;
+
 async function callGemini(apiKey: string, prompt: string): Promise<string | null> {
+  lastGeminiError = null;
+  
   for (const model of GEMINI_MODELS) {
     try {
       console.log(`Trying Gemini model: ${model}`);
@@ -87,7 +92,23 @@ async function callGemini(apiKey: string, prompt: string): Promise<string | null
       if (!response.ok) {
         const errorData = await response.json();
         console.error(`Gemini ${model} failed:`, JSON.stringify(errorData));
-        if (response.status === 429) continue;
+        
+        // Parse error message for user-friendly display
+        const errorMessage = errorData?.error?.message || '';
+        const errorStatus = errorData?.error?.status || '';
+        
+        if (response.status === 429 || errorStatus === 'RESOURCE_EXHAUSTED') {
+          lastGeminiError = 'API quota exceeded. Your Gemini API has reached its rate limit. Please wait a few minutes and try again, or check your Google AI Studio billing.';
+          continue;
+        } else if (response.status === 403 || errorStatus === 'PERMISSION_DENIED') {
+          lastGeminiError = 'API access denied. Please verify your Gemini API key is valid and has the correct permissions.';
+          continue;
+        } else if (response.status === 400) {
+          lastGeminiError = 'Invalid request to AI. The generation request was rejected. Please try again with different settings.';
+          continue;
+        } else {
+          lastGeminiError = `AI service error (${response.status}): ${errorMessage.slice(0, 100)}`;
+        }
         continue;
       }
 
@@ -96,13 +117,26 @@ async function callGemini(apiKey: string, prompt: string): Promise<string | null
       if (text) {
         console.log(`Success with ${model}`);
         return text;
+      } else {
+        // Check for content filtering or safety issues
+        const finishReason = data.candidates?.[0]?.finishReason;
+        if (finishReason === 'SAFETY') {
+          lastGeminiError = 'Content was filtered by safety settings. Please try a different topic.';
+        } else {
+          lastGeminiError = 'AI returned empty response. Please try again.';
+        }
       }
     } catch (err) {
       console.error(`Error with ${model}:`, err);
+      lastGeminiError = `Connection error: Unable to reach AI service. Please check your internet connection and try again.`;
       continue;
     }
   }
   return null;
+}
+
+function getLastGeminiError(): string {
+  return lastGeminiError || 'Failed to generate content. Please try again.';
 }
 
 // Generate map image using Lovable AI Gateway
@@ -536,7 +570,6 @@ Return ONLY valid JSON in this exact format:
 }`;
 
     case 'FILL_IN_BLANK':
-    case 'SENTENCE_COMPLETION':
     case 'SHORT_ANSWER':
       return basePrompt + `2. Create ${questionCount} fill-in-the-blank/sentence completion questions.
    - Answers should be words or short phrases from the passage (1-3 words)
@@ -554,6 +587,45 @@ Return ONLY valid JSON in this exact format:
       "question_text": "According to the passage, the main cause of _____ is pollution.",
       "correct_answer": "climate change",
       "explanation": "Found in paragraph A: 'the main cause of climate change is pollution'"
+    }
+  ]
+}`;
+
+    case 'SENTENCE_COMPLETION':
+      return basePrompt + `2. Create ${questionCount} sentence completion questions with a word bank.
+   - Provide a list of words/phrases (options A-H) that test-takers must choose from
+   - Each question is a sentence with a blank that must be completed using one of the given words
+   - Provide more options than questions as distractors
+
+Return ONLY valid JSON in this exact format:
+{
+  "passage": {
+    "title": "The title of the passage",
+    "content": "The full passage text with paragraph labels like [A], [B], etc."
+  },
+  "instruction": "Complete the sentences below. Choose the correct letter, A-H, from the list of words below.",
+  "word_bank": [
+    {"id": "A", "text": "technology"},
+    {"id": "B", "text": "environment"},
+    {"id": "C", "text": "research"},
+    {"id": "D", "text": "education"},
+    {"id": "E", "text": "climate"},
+    {"id": "F", "text": "innovation"},
+    {"id": "G", "text": "development"},
+    {"id": "H", "text": "sustainability"}
+  ],
+  "questions": [
+    {
+      "question_number": 1,
+      "question_text": "The main focus of the study was on _____.",
+      "correct_answer": "A",
+      "explanation": "The passage mentions technology as the main focus in paragraph B"
+    },
+    {
+      "question_number": 2,
+      "question_text": "Scientists emphasized the importance of _____ in modern society.",
+      "correct_answer": "F",
+      "explanation": "Innovation is discussed as crucial in paragraph C"
     }
   ]
 }`;
@@ -1053,7 +1125,7 @@ serve(async (req) => {
 
       const result = await callGemini(geminiApiKey, readingPrompt);
       if (!result) {
-        return new Response(JSON.stringify({ error: 'Failed to generate reading test' }), {
+        return new Response(JSON.stringify({ error: getLastGeminiError() }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -1091,6 +1163,11 @@ serve(async (req) => {
         groupOptions = { 
           word_bank: parsed.word_bank,
           summary_text: parsed.summary_text 
+        };
+      } else if (questionType === 'SENTENCE_COMPLETION' && parsed.word_bank) {
+        groupOptions = { 
+          word_bank: parsed.word_bank,
+          use_dropdown: true
         };
       } else if (questionType === 'FLOWCHART_COMPLETION') {
         // Generate flowchart image for reading tests

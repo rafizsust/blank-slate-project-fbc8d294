@@ -246,14 +246,21 @@ export function ReadingQuestions({
           ? getQuestionGroupOptions(question.question_group_id || null)
           : null;
 
-        const useDropdown = !!groupMeta?.use_dropdown;
-        // options is stored as: { options: [...], group_title: '...', ... } in the DB
         const groupOptions = groupMeta?.options || {};
-        const wordBank = Array.isArray(groupOptions)
-          ? groupOptions
-          : Array.isArray(groupOptions?.options)
-            ? groupOptions.options
-            : [];
+        const useDropdown = !!groupMeta?.use_dropdown || !!groupOptions?.use_dropdown;
+        
+        // Extract word bank - handle both DB format (options.options) and AI format (options.word_bank)
+        let wordBank: string[] = [];
+        if (Array.isArray(groupOptions?.word_bank)) {
+          // AI-generated format: word_bank is array of {id, text} objects - extract just IDs
+          wordBank = groupOptions.word_bank.map((w: any) => 
+            typeof w === 'string' ? w : w.id || ''
+          );
+        } else if (Array.isArray(groupOptions?.options)) {
+          wordBank = groupOptions.options;
+        } else if (Array.isArray(groupOptions)) {
+          wordBank = groupOptions;
+        }
 
         return (
           <FillInBlank
@@ -360,6 +367,21 @@ export function ReadingQuestions({
             // Fill-in-gap display options (stored on reading_question_groups)
             // Title options are inside groupMeta.options (the JSON options column)
             const groupOptions = groupMeta?.options || {};
+            
+            // Extract word bank - handle both DB format (options.options) and AI format (options.word_bank)
+            const extractWordBank = () => {
+              // AI-generated format: word_bank is array of {id, text} objects
+              if (Array.isArray(groupOptions?.word_bank)) {
+                return groupOptions.word_bank.map((w: any) => 
+                  typeof w === 'string' ? w : w.id || ''
+                );
+              }
+              // DB format: options array
+              if (Array.isArray(groupOptions?.options)) return groupOptions.options;
+              if (Array.isArray(groupOptions)) return groupOptions;
+              return [];
+            };
+            
             const fillDisplay = {
               displayAsParagraph: !!groupMeta?.display_as_paragraph,
               showBullets: !!groupMeta?.show_bullets,
@@ -367,8 +389,9 @@ export function ReadingQuestions({
               groupTitle: groupOptions?.group_title || '',
               titleCentered: !!groupOptions?.title_centered,
               titleColored: !!groupOptions?.title_colored,
-              useDropdown: !!groupMeta?.use_dropdown,
-              wordBank: Array.isArray(groupOptions?.options) ? groupOptions.options : (Array.isArray(groupOptions) ? groupOptions : []),
+              useDropdown: !!groupMeta?.use_dropdown || !!groupOptions?.use_dropdown,
+              wordBank: extractWordBank(),
+              wordBankWithText: Array.isArray(groupOptions?.word_bank) ? groupOptions.word_bank : [], // For displaying with text
               noteStyleEnabled: !!groupOptions?.note_style_enabled,
               noteCategories: groupOptions?.note_categories || [],
             };
@@ -1011,96 +1034,113 @@ export function ReadingQuestions({
 
 
                     return (
-                      <div className="space-y-1">
-                        {typeQuestions.map((question, qIdx) => {
-                          const isActive = currentQuestion === question.question_number;
-                          const handleSetActive = () => setCurrentQuestion(question.question_number);
-                          const questionInput = renderQuestionInput(question, isActive, handleSetActive);
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          {typeQuestions.map((question, qIdx) => {
+                            const isActive = currentQuestion === question.question_number;
+                            const handleSetActive = () => setCurrentQuestion(question.question_number);
+                            const questionInput = renderQuestionInput(question, isActive, handleSetActive);
 
-                          // Skip rendering if no input (like matching headings or matching sentence endings individual questions)
-                          if (questionInput === null && (type === 'MATCHING_HEADINGS' || type === 'MATCHING_SENTENCE_ENDINGS')) {
-                            return null;
-                          }
+                            // Skip rendering if no input (like matching headings or matching sentence endings individual questions)
+                            if (questionInput === null && (type === 'MATCHING_HEADINGS' || type === 'MATCHING_SENTENCE_ENDINGS')) {
+                              return null;
+                            }
 
-                          // For fill in blank, summary, sentence completion, short answer with inline blanks, only show the input (not the question text separately)
-                          const inlineBlankTypes = ['FILL_IN_BLANK', 'SUMMARY_COMPLETION', 'SENTENCE_COMPLETION', 'SHORT_ANSWER'];
-                          const hasInlineBlank = inlineBlankTypes.includes(type) && /_{2,}/.test(question.question_text);
+                            // For fill in blank, summary, sentence completion, short answer with inline blanks, only show the input (not the question text separately)
+                            const inlineBlankTypes = ['FILL_IN_BLANK', 'SUMMARY_COMPLETION', 'SENTENCE_COMPLETION', 'SHORT_ANSWER'];
+                            const hasInlineBlank = inlineBlankTypes.includes(type) && /_{2,}/.test(question.question_text);
 
-                          // For fill-in-gap types *without* inline blanks (i.e. question text + separate input), keep text + input on the same line
-                          const showInlineSentenceLayout =
-                            ['FILL_IN_BLANK', 'SUMMARY_COMPLETION', 'SENTENCE_COMPLETION', 'SHORT_ANSWER'].includes(type) && !hasInlineBlank;
+                            // For fill-in-gap types *without* inline blanks (i.e. question text + separate input), keep text + input on the same line
+                            const showInlineSentenceLayout =
+                              ['FILL_IN_BLANK', 'SUMMARY_COMPLETION', 'SENTENCE_COMPLETION', 'SHORT_ANSWER'].includes(type) && !hasInlineBlank;
 
-                          // Check if we need to show a section heading (only when it changes from previous question)
-                          const prevQuestion = qIdx > 0 ? typeQuestions[qIdx - 1] : null;
-                          const showSectionHeading = fillDisplay.showHeadings && 
-                            question.heading?.trim() && 
-                            question.heading !== prevQuestion?.heading;
+                            // Check if we need to show a section heading (only when it changes from previous question)
+                            const prevQuestion = qIdx > 0 ? typeQuestions[qIdx - 1] : null;
+                            const showSectionHeading = fillDisplay.showHeadings && 
+                              question.heading?.trim() && 
+                              question.heading !== prevQuestion?.heading;
 
-                          return (
-                            <div key={question.id}>
-                              {/* Section heading as separator */}
-                              {showSectionHeading && (
-                                <h5 className={cn(
-                                  "font-bold text-sm mb-2 mt-4",
-                                  fillDisplay.titleColored && "text-primary"
-                                )}>
-                                  {question.heading}
-                                </h5>
-                              )}
-                              <article
-                                id={`question-${question.question_number}`}
-                                className="py-2 transition-all cursor-pointer"
-                                onPointerDownCapture={() => {
-                                  setCurrentQuestion(question.question_number);
-                                }}
-                                onClick={() => {
-                                  setCurrentQuestion(question.question_number);
-                                }}
-                              >
-                                <div className="flex items-start gap-2">
-                                  {/* Question number badge - only show for non-fill-in-blank types, or when no inline blank */}
-                                  {!hasInlineBlank && (
-                                    <span className={cn(
-                                      "flex-shrink-0 text-base font-bold text-foreground inline-flex items-center justify-center",
-                                      isActive 
-                                        ? "border-2 border-[#5DADE2] px-2 py-0.5 rounded-[3px] min-w-[32px]" 
-                                        : "min-w-[28px]"
-                                    )}>
-                                      {question.question_number}
-                                    </span>
-                                  )}
-                                  {fillDisplay.showBullets && !isFillInGapGroup && (
-                                    <span className="mt-1 text-muted-foreground" aria-hidden="true">
-                                      ▪
-                                    </span>
-                                  )}
-                                  <div
-                                    className={cn(
-                                      "flex-1",
-                                      showInlineSentenceLayout
-                                        ? "flex flex-wrap items-baseline gap-x-1 gap-y-1"
-                                        : "space-y-1"
-                                    )}
-                                  >
+                            return (
+                              <div key={question.id}>
+                                {/* Section heading as separator */}
+                                {showSectionHeading && (
+                                  <h5 className={cn(
+                                    "font-bold text-sm mb-2 mt-4",
+                                    fillDisplay.titleColored && "text-primary"
+                                  )}>
+                                    {question.heading}
+                                  </h5>
+                                )}
+                                <article
+                                  id={`question-${question.question_number}`}
+                                  className="py-2 transition-all cursor-pointer"
+                                  onPointerDownCapture={() => {
+                                    setCurrentQuestion(question.question_number);
+                                  }}
+                                  onClick={() => {
+                                    setCurrentQuestion(question.question_number);
+                                  }}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    {/* Question number badge - only show for non-fill-in-blank types, or when no inline blank */}
                                     {!hasInlineBlank && (
-                                      <QuestionTextWithTools
-                                        contentId={question.id}
-                                        testId={testId}
-                                        text={question.question_text}
-                                        fontSize={fontSize}
-                                        renderRichText={renderRichText}
-                                        isActive={isActive && shouldHighlightContainer}
-                                        as={showInlineSentenceLayout ? "span" : undefined}
-                                      />
+                                      <span className={cn(
+                                        "flex-shrink-0 text-base font-bold text-foreground inline-flex items-center justify-center",
+                                        isActive 
+                                          ? "border-2 border-[#5DADE2] px-2 py-0.5 rounded-[3px] min-w-[32px]" 
+                                          : "min-w-[28px]"
+                                      )}>
+                                        {question.question_number}
+                                      </span>
                                     )}
+                                    {fillDisplay.showBullets && !isFillInGapGroup && (
+                                      <span className="mt-1 text-muted-foreground" aria-hidden="true">
+                                        ▪
+                                      </span>
+                                    )}
+                                    <div
+                                      className={cn(
+                                        "flex-1",
+                                        showInlineSentenceLayout
+                                          ? "flex flex-wrap items-baseline gap-x-1 gap-y-1"
+                                          : "space-y-1"
+                                      )}
+                                    >
+                                      {!hasInlineBlank && (
+                                        <QuestionTextWithTools
+                                          contentId={question.id}
+                                          testId={testId}
+                                          text={question.question_text}
+                                          fontSize={fontSize}
+                                          renderRichText={renderRichText}
+                                          isActive={isActive && shouldHighlightContainer}
+                                          as={showInlineSentenceLayout ? "span" : undefined}
+                                        />
+                                      )}
 
-                                    {questionInput}
+                                      {questionInput}
+                                    </div>
                                   </div>
+                                </article>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Word Bank Table for SENTENCE_COMPLETION with word list */}
+                        {type === 'SENTENCE_COMPLETION' && fillDisplay.wordBankWithText.length > 0 && (
+                          <div className="mt-6 p-4 border border-border rounded-md bg-muted/30">
+                            <h4 className="font-bold text-sm mb-3 text-foreground">Word List</h4>
+                            <div className="grid gap-2">
+                              {(fillDisplay.wordBankWithText as Array<{id: string; text: string}>).map((item) => (
+                                <div key={item.id} className="flex items-baseline gap-2 text-sm">
+                                  <span className="font-bold text-primary min-w-[24px]">{item.id}</span>
+                                  <span className="text-foreground">{item.text}</span>
                                 </div>
-                              </article>
+                              ))}
                             </div>
-                          );
-                        })}
+                          </div>
+                        )}
                       </div>
                     );
                   })()
