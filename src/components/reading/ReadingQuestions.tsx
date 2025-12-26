@@ -713,7 +713,19 @@ export function ReadingQuestions({
                       : null;
 
                     const groupData = group?.options || null;
-                    const sections = groupData?.sections || [];
+                    // Handle both formats: AI generates note_sections, DB uses sections
+                    const rawSections = groupData?.sections || groupData?.note_sections || [];
+                    
+                    // Convert note_sections format to expected sections format
+                    const sections = rawSections.map((sec: any) => ({
+                      heading: sec.heading || sec.title || '',
+                      items: (sec.items || []).map((item: any) => ({
+                        question_number: item.question_number,
+                        text_before: item.text_before || '',
+                        text_after: item.text_after || '',
+                      })),
+                    }));
+                    
                     const title = groupData?.title || '';
 
                     return (
@@ -763,16 +775,23 @@ export function ReadingQuestions({
                     const title = opts?.title || opts?.flowchart_title || '';
 
                     const rawSteps = opts?.steps || opts?.flowchart_steps;
+                    
+                    // Helper to clean underscore patterns from labels (e.g., "_____" or "___")
+                    const cleanUnderscores = (text: string): string => {
+                      return text.replace(/_+/g, '').trim();
+                    };
+                    
                     const steps = Array.isArray(rawSteps)
                       ? rawSteps.map((s: any, idx: number) => ({
                           id: String(s?.id ?? `step-${idx + 1}`),
-                          label: String(s?.label ?? s?.text ?? ''),
+                          // Remove underscores from labels - the input field handles the blank
+                          label: cleanUnderscores(String(s?.label ?? s?.text ?? '')),
                           questionNumber: typeof s?.questionNumber === 'number' ? s.questionNumber : undefined,
                           isBlank: !!s?.isBlank,
                         }))
                       : typeQuestions.map((q) => ({
                           id: q.id,
-                          label: q.question_text,
+                          label: cleanUnderscores(q.question_text),
                           questionNumber: q.question_number,
                           isBlank: true,
                         }));

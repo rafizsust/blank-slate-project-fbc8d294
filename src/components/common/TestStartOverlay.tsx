@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
   BookOpen, 
   Headphones, 
@@ -39,13 +38,13 @@ export function TestStartOverlay({
   onStart,
   onCancel,
 }: TestStartOverlayProps) {
-  const [hasAgreed, setHasAgreed] = useState(false);
   const [hasTestedAudio, setHasTestedAudio] = useState(module !== 'listening' && module !== 'speaking');
   const [hasTestedMic, setHasTestedMic] = useState(module !== 'speaking');
 
   const needsAudioTest = module === 'listening' || module === 'speaking';
   const needsMicTest = module === 'speaking';
-  const isReady = hasAgreed && (!needsAudioTest || hasTestedAudio) && (!needsMicTest || hasTestedMic);
+  // Remove consent requirement - just need audio/mic tests for applicable modules
+  const isReady = (!needsAudioTest || hasTestedAudio) && (!needsMicTest || hasTestedMic);
 
   const testAudio = () => {
     try {
@@ -225,17 +224,6 @@ export function TestStartOverlay({
             </div>
           </div>
 
-          {/* Consent Checkbox */}
-          <div className="flex items-start gap-3 p-3 rounded-lg border">
-            <Checkbox 
-              id="consent"
-              checked={hasAgreed}
-              onCheckedChange={(checked) => setHasAgreed(checked === true)}
-            />
-            <label htmlFor="consent" className="text-sm cursor-pointer">
-              I understand that the timer will start immediately and I'm ready to take the test.
-            </label>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3">
