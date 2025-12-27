@@ -149,6 +149,45 @@ function getLastGeminiError(): string {
   return lastGeminiError || 'Failed to generate content. Please try again.';
 }
 
+// Robust JSON extraction from Gemini response
+// Handles: raw JSON, ```json...```, ```...```, and mixed content
+function extractJsonFromResponse(text: string): string {
+  if (!text || typeof text !== 'string') {
+    throw new Error('Empty or invalid response from AI');
+  }
+  
+  // Try to find JSON in markdown code blocks first
+  // Match ```json ... ``` or ``` ... ```
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (codeBlockMatch && codeBlockMatch[1]) {
+    const extracted = codeBlockMatch[1].trim();
+    // Validate it looks like JSON
+    if (extracted.startsWith('{') || extracted.startsWith('[')) {
+      return extracted;
+    }
+  }
+  
+  // Try finding JSON object directly (starts with { and ends with })
+  const jsonObjectMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonObjectMatch) {
+    return jsonObjectMatch[0];
+  }
+  
+  // Try finding JSON array directly
+  const jsonArrayMatch = text.match(/\[[\s\S]*\]/);
+  if (jsonArrayMatch) {
+    return jsonArrayMatch[0];
+  }
+  
+  // Last resort: try trimming and returning as-is
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return trimmed;
+  }
+  
+  throw new Error('Could not extract valid JSON from AI response');
+}
+
 // Generate map image using Gemini (via Lovable AI Gateway)
 async function generateMapImage(mapDescription: string, mapLabels: Array<{id: string; text: string}>): Promise<string | null> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -1121,9 +1160,10 @@ ANSWER VARIETY:
 - Numbers are acceptable answers: "1985", "15", "222"
 - Maximum allowed is 3 words AND/OR a number
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Welcome to today's lecture on ancient architecture...\\nSpeaker1: The technique, known as barrel vaulting, was first developed...\\nSpeaker1: Our main focus today will be on three important structures...",
+  "speaker_names": {"Speaker1": "Professor Williams"},
   "instruction": "Complete the notes below. Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.",
   "questions": [
     {
@@ -1196,9 +1236,10 @@ CRITICAL FOR NUMBER ANSWERS:
 - When numbers are spoken as "triple two" or "double seven", the CORRECT ANSWER must be the NUMERIC form (e.g., "222" or "77")
 - Both "222" and "triple two" should be considered correct (put the numeric form as correct_answer)
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Hello, I'd like to book an appointment...\\nSpeaker2: Certainly, can I take your name please?\\nSpeaker1: Yes, it's Dr. Evelyn Reed. Evelyn is spelled E-V-E-L-Y-N.\\nSpeaker2: Thank you. And your phone number?\\nSpeaker1: It's oh-seven-seven, triple two, five, nine.",
+  "speaker_names": {"Speaker1": "Dr. Evelyn Reed", "Speaker2": "Receptionist"},
   "instruction": "Complete the notes below. Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.",
   "questions": [
     {
@@ -1241,9 +1282,10 @@ ANSWER VARIETY:
 - Numbers are acceptable answers: "1985", "15", "222"
 - Maximum allowed is 3 words AND/OR a number, but do NOT make all answers the same length
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Hello, welcome to the museum...\\nSpeaker2: Thank you...",
+  "speaker_names": {"Speaker1": "Tour Guide", "Speaker2": "Visitor"},
   "instruction": "Complete the notes below. Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.",
   "questions": [
     {
@@ -1284,9 +1326,10 @@ CRITICAL RULES:
    - Numbers are acceptable: "15", "9:30", "1985"
    - Maximum allowed is 3 words AND/OR a number, but do NOT make all answers the same length
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Let me explain the schedule...\\nSpeaker2: Yes, please...",
+  "speaker_names": {"Speaker1": "Tour Guide", "Speaker2": "Visitor"},
   "instruction": "Complete the table below. Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.",
   "table_data": [
     [{"content": "Time", "is_header": true}, {"content": "Activity", "is_header": true}, {"content": "Location", "is_header": true}],
@@ -1302,9 +1345,10 @@ Return ONLY valid JSON in this exact format:
     case 'MULTIPLE_CHOICE_SINGLE':
       return basePrompt + `2. Create ${questionCount} multiple choice questions (single answer).
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: The conference will focus on...\\nSpeaker2: That sounds interesting...",
+  "speaker_names": {"Speaker1": "Professor Smith", "Speaker2": "Student"},
   "instruction": "Choose the correct letter, A, B, or C.",
   "questions": [
     {
@@ -1320,9 +1364,10 @@ Return ONLY valid JSON in this exact format:
     case 'MULTIPLE_CHOICE_MULTIPLE':
       return basePrompt + `2. Create ${questionCount} multiple choice questions where listeners select TWO correct answers.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: There are several benefits...\\nSpeaker2: Can you list them?...",
+  "speaker_names": {"Speaker1": "Manager", "Speaker2": "Employee"},
   "instruction": "Choose TWO letters, A-E.",
   "questions": [
     {
@@ -1339,9 +1384,10 @@ Return ONLY valid JSON in this exact format:
     case 'MATCHING_CORRECT_LETTER':
       return basePrompt + `2. Create ${questionCount} matching questions where listeners match items to categories.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Let me describe each option...\\nSpeaker2: Yes, I need to choose...",
+  "speaker_names": {"Speaker1": "Advisor", "Speaker2": "Client"},
   "instruction": "What does the speaker say about each item? Choose the correct letter, A-C.",
   "options": ["A Recommended", "B Not recommended", "C Depends on situation"],
   "questions": [
@@ -1357,9 +1403,10 @@ Return ONLY valid JSON in this exact format:
     case 'FLOWCHART_COMPLETION':
       return basePrompt + `2. Create a flowchart completion task about a process with ${questionCount} blanks.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Let me explain the process...\\nSpeaker2: Please go ahead...",
+  "speaker_names": {"Speaker1": "HR Manager", "Speaker2": "Applicant"},
   "instruction": "Complete the flow chart below. Write NO MORE THAN TWO WORDS for each answer.",
   "flowchart_title": "Process of Application",
   "flowchart_steps": [
@@ -1384,9 +1431,10 @@ CRITICAL RULES:
   "<Item> ____ ." or "Drop answer ____ here." (must contain "____").
 - The draggable options MUST be provided via drag_options.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Each department has different responsibilities...\\nSpeaker2: I see...",
+  "speaker_names": {"Speaker1": "Department Head", "Speaker2": "New Employee"},
   "instruction": "Match each person to their responsibility. Drag the correct option to each box.",
   "drag_options": ["Managing budget", "Training staff", "Customer service", "Quality control", "Marketing", "Scheduling", "Research"],
   "questions": [
@@ -1398,9 +1446,10 @@ Return ONLY valid JSON in this exact format:
     case 'MAP_LABELING':
       return basePrompt + `2. Create a map labeling task with ${questionCount} locations to identify.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Let me show you around the campus...\\nSpeaker2: Great, where is everything?...",
+  "speaker_names": {"Speaker1": "Campus Guide", "Speaker2": "New Student"},
   "instruction": "Label the map below. Write the correct letter, A-F.",
   "map_description": "A campus map showing: Library (A), Science Building (B), Sports Center (C), Cafeteria (D), Administration (E), Parking (F)",
   "map_labels": [
@@ -1422,9 +1471,10 @@ Return ONLY valid JSON in this exact format:
    - IMPORTANT: Vary answer lengths - use ONE word, TWO words, or THREE words AND/OR a number
    - Maximum allowed is 3 words AND/OR a number, but do NOT make all answers the same length
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: Let me explain the key points...\\nSpeaker2: Please go ahead...",
+  "speaker_names": {"Speaker1": "Lecturer", "Speaker2": "Moderator"},
   "instruction": "Complete the notes below. Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.",
   "note_sections": [
     {
@@ -1454,9 +1504,10 @@ Return ONLY valid JSON in this exact format:
    - IMPORTANT: Vary answer lengths - use ONE word, TWO words, or THREE words AND/OR a number
    - Maximum allowed is 3 words AND/OR a number, but do NOT make all answers the same length
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON (no markdown code blocks) in this exact format:
 {
   "dialogue": "Speaker1: dialogue...\\nSpeaker2: response...",
+  "speaker_names": {"Speaker1": "Host", "Speaker2": "Guest"},
   "instruction": "Complete the notes below. Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.",
   "questions": [
     {
@@ -1543,12 +1594,11 @@ serve(async (req) => {
 
       let parsed;
       try {
-        const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-        const jsonStr = jsonMatch ? jsonMatch[1].trim() : result.trim();
+        const jsonStr = extractJsonFromResponse(result);
         parsed = JSON.parse(jsonStr);
       } catch (e) {
-        console.error("Failed to parse Gemini response:", e, result);
-        return new Response(JSON.stringify({ error: 'Failed to parse generated content' }), {
+        console.error("Failed to parse Gemini response:", e, result?.substring(0, 500));
+        return new Response(JSON.stringify({ error: 'Failed to parse generated content. Please try again.' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -1718,12 +1768,11 @@ serve(async (req) => {
 
       let parsed;
       try {
-        const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-        const jsonStr = jsonMatch ? jsonMatch[1].trim() : result.trim();
+        const jsonStr = extractJsonFromResponse(result);
         parsed = JSON.parse(jsonStr);
       } catch (e) {
-        console.error("Failed to parse Gemini response:", e, result);
-        return new Response(JSON.stringify({ error: 'Failed to parse generated content' }), {
+        console.error("Failed to parse Gemini response:", e, result?.substring(0, 500));
+        return new Response(JSON.stringify({ error: 'Failed to parse generated content. Please try again.' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -1929,12 +1978,11 @@ serve(async (req) => {
 
       let parsed;
       try {
-        const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-        const jsonStr = jsonMatch ? jsonMatch[1].trim() : result.trim();
+        const jsonStr = extractJsonFromResponse(result);
         parsed = JSON.parse(jsonStr);
       } catch (e) {
-        console.error("Failed to parse Gemini response:", e, result);
-        return new Response(JSON.stringify({ error: 'Failed to parse generated content' }), {
+        console.error("Failed to parse Gemini response:", e, result?.substring(0, 500));
+        return new Response(JSON.stringify({ error: 'Failed to parse generated content. Please try again.' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -1969,11 +2017,11 @@ serve(async (req) => {
 
       let parsed;
       try {
-        const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-        const jsonStr = jsonMatch ? jsonMatch[1].trim() : result.trim();
+        const jsonStr = extractJsonFromResponse(result);
         parsed = JSON.parse(jsonStr);
       } catch (e) {
-        return new Response(JSON.stringify({ error: 'Failed to parse generated content' }), {
+        console.error("Failed to parse Gemini response:", e, result?.substring(0, 500));
+        return new Response(JSON.stringify({ error: 'Failed to parse generated content. Please try again.' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
