@@ -48,18 +48,20 @@ export function MultipleChoiceSingle({ testId, renderRichText, question, answer,
   // Normalize options to handle both string[] and {label, text}[] formats
   const normalizedOptions = rawOptions.map((opt, idx) => {
     if (typeof opt === 'string') {
-      const { label, cleanText } = stripLetterPrefix(opt);
-      // Use extracted label if found, otherwise generate one
+      const { cleanText } = stripLetterPrefix(opt);
+      // Always generate label from index to avoid duplicates
       return { 
-        label: label || getOptionLabel(idx, optionFormat), 
+        label: getOptionLabel(idx, optionFormat), 
         text: cleanText || opt 
       };
     }
     // Handle object format {label: "A", text: "..."}
     const optObj = opt as { label?: string; text?: string };
+    // Strip prefix from text if present and always use index for label
+    const { cleanText } = stripLetterPrefix(optObj.text || String(opt));
     return {
-      label: optObj.label || getOptionLabel(idx, optionFormat),
-      text: optObj.text || String(opt),
+      label: getOptionLabel(idx, optionFormat),
+      text: cleanText || optObj.text || String(opt),
     };
   });
 

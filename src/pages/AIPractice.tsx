@@ -273,21 +273,34 @@ export default function AIPractice() {
       
       // Parse error message for user-friendly display
       let errorMessage = err.message || 'Failed to generate practice test. Please try again.';
+      let showSettingsLink = false;
       
       // Handle common API errors with user-friendly messages
       if (errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('429')) {
-        errorMessage = 'AI quota limit reached. Please wait a few minutes and try again, or update your Gemini API key in Settings.';
+        errorMessage = 'AI quota limit reached. Please wait a few minutes or update your Gemini API key.';
+        showSettingsLink = true;
       } else if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('403')) {
-        errorMessage = 'API access denied. Please check your Gemini API key in Settings.';
+        errorMessage = 'API access denied. Please check your Gemini API key.';
+        showSettingsLink = true;
       } else if (errorMessage.includes('non-2xx') || errorMessage.includes('status code')) {
         errorMessage = 'AI service temporarily unavailable. Please try again in a moment.';
       } else if (errorMessage.includes('API key') || errorMessage.includes('authentication')) {
-        errorMessage = 'Invalid API key. Please update your Gemini API key in Settings.';
+        errorMessage = 'Invalid API key. Please update your Gemini API key.';
+        showSettingsLink = true;
       }
       
       toast({
         title: 'Generation Failed',
-        description: errorMessage,
+        description: (
+          <div className="flex flex-col gap-2">
+            <span>{errorMessage}</span>
+            {showSettingsLink && (
+              <Link to="/settings" className="text-primary underline text-sm font-medium hover:text-primary/80">
+                Go to Settings →
+              </Link>
+            )}
+          </div>
+        ),
         variant: 'destructive',
       });
     } finally {

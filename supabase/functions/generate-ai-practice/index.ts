@@ -735,6 +735,9 @@ CRITICAL RULES:
 2. Tables MUST have EXACTLY 3 COLUMNS (no more, no less).
 3. Use inline blanks with __ (double underscores) within cell content, NOT separate cells for blanks.
    - Example: "Clean air and water, pollination of crops, and __" where __ is the blank
+4. DISTRIBUTE blanks across BOTH column 2 AND column 3. Do NOT put all blanks only in column 2.
+   - Alternate between putting blanks in the 2nd column and the 3rd column
+   - At least 1/3 of blanks MUST be in the 3rd column
 
 Return ONLY valid JSON in this exact format:
 {
@@ -745,8 +748,8 @@ Return ONLY valid JSON in this exact format:
   "instruction": "Complete the table below. Choose NO MORE THAN TWO WORDS from the passage for each answer.",
   "table_data": [
     [{"content": "Category", "is_header": true}, {"content": "Details", "is_header": true}, {"content": "Impact", "is_header": true}],
-    [{"content": "First item"}, {"content": "Description text and __", "has_question": true, "question_number": 1}, {"content": "Positive"}],
-    [{"content": "Second item"}, {"content": "More text including __", "has_question": true, "question_number": 2}, {"content": "Moderate"}],
+    [{"content": "First item"}, {"content": "Description text and __", "has_question": true, "question_number": 1}, {"content": "Positive effect"}],
+    [{"content": "Second item"}, {"content": "More text here"}, {"content": "Results in __", "has_question": true, "question_number": 2}],
     [{"content": "Third item"}, {"content": "Additional info about __", "has_question": true, "question_number": 3}, {"content": "Significant"}]
   ],
   "questions": [
