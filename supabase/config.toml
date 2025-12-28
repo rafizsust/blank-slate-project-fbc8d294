@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.evaluate-ai-speaking]
 verify_jwt = true
+
+[functions.generate-gemini-tts]
+verify_jwt = true
