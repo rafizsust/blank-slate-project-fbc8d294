@@ -362,15 +362,13 @@ async function generateImageWithGemini(prompt: string, geminiApiKey: string): Pr
     return null;
   }
 
-  // Try Gemini image generation models in order of preference
-  const imageModels = [
-    'gemini-2.0-flash-exp-image-generation',  // Experimental model for image gen
-    'gemini-2.0-flash-preview-image-generation', // Preview model
-  ];
+  // Use the stable gemini-2.5-flash-image model (the deprecated gemini-2.0-flash-preview-image-generation caused 404 errors)
+  const model = 'gemini-2.5-flash-image';
+  const maxRetries = 2;
 
-  for (const model of imageModels) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Trying image generation with model: ${model}...`);
+      console.log(`Generating image with ${model}${attempt > 0 ? ` (retry ${attempt})` : ''}...`);
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
@@ -392,49 +390,25 @@ async function generateImageWithGemini(prompt: string, geminiApiKey: string): Pr
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`Model ${model} failed: ${response.status} - ${errorText}`);
+        console.log(`Image generation failed (${response.status}): ${errorText}`);
         
-        // If model not found, try next model
-        if (response.status === 404) {
+        // For rate limits, wait and retry
+        if (response.status === 429 && attempt < maxRetries) {
+          const delay = Math.min(5000 * Math.pow(2, attempt), 30000);
+          console.log(`Rate limited, waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
         
-        // For rate limits, wait and retry
-        if (response.status === 429) {
-          console.log('Rate limited, waiting 5 seconds before retry...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          
-          const retryResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                  responseModalities: ["TEXT", "IMAGE"]
-                }
-              }),
-            }
-          );
-          
-          if (retryResponse.ok) {
-            const retryData = await retryResponse.json();
-            // Extract image from response - check for inlineData in parts
-            const parts = retryData.candidates?.[0]?.content?.parts || [];
-            for (const part of parts) {
-              if (part.inlineData?.data) {
-                const mimeType = part.inlineData.mimeType || 'image/png';
-                console.log(`Image generated successfully with ${model} (after retry)`);
-                return `data:${mimeType};base64,${part.inlineData.data}`;
-              }
-            }
-          }
+        // For server errors, retry with backoff
+        if (response.status >= 500 && attempt < maxRetries) {
+          const delay = Math.min(2000 * Math.pow(2, attempt), 15000);
+          console.log(`Server error, waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
         }
         
-        continue;
+        return null;
       }
 
       const data = await response.json();
@@ -449,14 +423,23 @@ async function generateImageWithGemini(prompt: string, geminiApiKey: string): Pr
         }
       }
       
-      console.log(`No image data from ${model}, trying next...`);
+      console.log(`No image data in response, attempt ${attempt + 1}/${maxRetries + 1}`);
+      
+      // If no image but no error, might be a transient issue - retry
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        continue;
+      }
     } catch (err) {
-      console.error(`Error with model ${model}:`, err);
-      continue;
+      console.error(`Image generation error (attempt ${attempt + 1}):`, err);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        continue;
+      }
     }
   }
 
-  console.error('All Gemini image models failed for image generation');
+  console.error('Image generation failed after all retries');
   return null;
 }
 
