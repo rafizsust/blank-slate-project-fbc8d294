@@ -1,4 +1,5 @@
 export * from './ListeningAudioPlayer';
+export * from './ListeningAudioPlayerSafe';
 export * from './MultiPartAudioPlayer';
 export * from './SeamlessAudioPlayer';
 export * from './WebAudioScheduledPlayer';
