@@ -9,7 +9,7 @@ import {
 import { TestOptionsMenu, ContrastMode, TextSizeMode } from '@/components/reading/TestOptionsMenu';
 import { TestStartOverlay } from '@/components/common/TestStartOverlay';
 import { ExitTestConfirmDialog } from '@/components/common/ExitTestConfirmDialog';
-import { StickyNote, ArrowLeft, ArrowRight, Sparkles, Volume2, Play, Pause, AlertCircle } from 'lucide-react';
+import { StickyNote, ArrowLeft, ArrowRight, Sparkles, Volume2, Play, Pause, AlertCircle, VolumeX } from 'lucide-react';
 import {
   ResizablePanel,
   ResizablePanelGroup,
@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/useAuth';
 import { useTopicCompletions } from '@/hooks/useTopicCompletions';
+import { useTTSFallback } from '@/hooks/useTTSFallback';
 import { 
   loadGeneratedTest,
   loadGeneratedTestAsync,
@@ -141,6 +142,9 @@ export default function AIPracticeListeningTest() {
   const [reviewTimeLeft, setReviewTimeLeft] = useState(30);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  
+  // TTS Fallback for when audio fails
+  const { speak: speakTTS, stop: stopTTS, isSpeaking: isTTSSpeaking, isSupported: isTTSSupported } = useTTSFallback({ rate: 0.9 });
   
   // Theme settings
   const [contrastMode, setContrastMode] = useState<ContrastMode>('black-on-white');
@@ -639,9 +643,20 @@ export default function AIPracticeListeningTest() {
             {/* Audio Player in header */}
             <div className="hidden md:flex flex-1 max-w-lg mx-4 items-center gap-3">
               {audioError ? (
-                <div className="flex items-center gap-2 text-sm text-amber-600">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="truncate">{audioError}</span>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span className="text-sm text-amber-600 truncate max-w-[150px]">{audioError}</span>
+                  {isTTSSupported && test.transcript && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => isTTSSpeaking ? stopTTS() : speakTTS(test.transcript!)}
+                      className="gap-1 flex-shrink-0"
+                    >
+                      {isTTSSpeaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                      {isTTSSpeaking ? 'Stop' : 'Read Aloud'}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <>
@@ -763,10 +778,23 @@ export default function AIPracticeListeningTest() {
                       {/* Transcript Section if no audio */}
                       {audioError && test.transcript && (
                         <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
-                          <h3 className="font-semibold mb-2 flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 text-amber-600" />
-                            Transcript (Audio unavailable)
-                          </h3>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 text-amber-600" />
+                              Transcript (Audio unavailable)
+                            </h3>
+                            {isTTSSupported && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => isTTSSpeaking ? stopTTS() : speakTTS(test.transcript!)}
+                                className="gap-1"
+                              >
+                                {isTTSSpeaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                                {isTTSSpeaking ? 'Stop' : 'Read Aloud'}
+                              </Button>
+                            )}
+                          </div>
                           <div 
                             className="text-sm whitespace-pre-wrap"
                             dangerouslySetInnerHTML={{ __html: renderRichText(test.transcript) }}
@@ -828,10 +856,23 @@ export default function AIPracticeListeningTest() {
                   {/* Mobile Transcript if no audio */}
                   {audioError && test.transcript && (
                     <div className="mb-4 p-3 bg-muted/50 rounded-lg border">
-                      <h3 className="font-semibold mb-2 text-sm flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-600" />
-                        Transcript
-                      </h3>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-sm flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600" />
+                          Transcript
+                        </h3>
+                        {isTTSSupported && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => isTTSSpeaking ? stopTTS() : speakTTS(test.transcript!)}
+                            className="gap-1 h-7 text-xs"
+                          >
+                            {isTTSSpeaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                            {isTTSSpeaking ? 'Stop' : 'Read'}
+                          </Button>
+                        )}
+                      </div>
                       <div 
                         className="text-xs whitespace-pre-wrap"
                         dangerouslySetInnerHTML={{ __html: renderRichText(test.transcript) }}
@@ -855,9 +896,19 @@ export default function AIPracticeListeningTest() {
                 <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white">
                   <p className="text-sm text-muted-foreground mb-4">Audio Player</p>
                   {audioError ? (
-                    <div className="flex flex-col items-center gap-2 text-amber-600">
+                    <div className="flex flex-col items-center gap-4 text-amber-600">
                       <AlertCircle className="w-8 h-8" />
                       <span className="text-sm text-center">{audioError}</span>
+                      {isTTSSupported && test.transcript && (
+                        <Button
+                          variant="outline"
+                          onClick={() => isTTSSpeaking ? stopTTS() : speakTTS(test.transcript!)}
+                          className="gap-2"
+                        >
+                          {isTTSSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                          {isTTSSpeaking ? 'Stop Reading' : 'Read Transcript Aloud'}
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="w-full max-w-md flex flex-col items-center gap-4">
