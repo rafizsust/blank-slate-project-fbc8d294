@@ -1300,8 +1300,8 @@ OFFICIAL IELTS FORMAT - CRITICAL RULES:
 - The correct_answer is the LETTER (A, B, C, etc.) where that place is located
 
 MAP STRUCTURE:
-- map_labels: Answer positions A-H. The "text" field stores what the letter represents (for answer checking) but this text is NOT shown on the map - only the letter circle appears!
-- landmarks: Reference points that ARE labeled on the map (streets, known buildings like "Main Entrance", "Café", "Park")
+- map_labels: Answer positions A-H with x,y coordinates (0-100 percentage). The "text" field stores what the letter represents (for answer checking) but this text is NOT shown on the map - only the letter circle appears!
+- landmarks: Reference points with x,y coordinates that ARE labeled on the map (streets, known buildings like "Main Entrance", "Café", "Park")
 
 PASSAGE STYLE:
 - Describe locations using RELATIVE POSITIONS: "The gift shop is directly opposite the main entrance" or "Located to the north of the café"
@@ -1319,21 +1319,22 @@ Return ONLY valid JSON in this exact format:
   "instruction": "Label the map below. Choose the correct letter, A-H.",
   "map_description": "A floor plan showing Oak Street at the bottom with main entrance. The building has various rooms arranged around a central corridor.",
   "map_labels": [
-    {"id": "A", "text": "Reception"},
-    {"id": "B", "text": "Children's Play Area"},
-    {"id": "C", "text": "Library"},
-    {"id": "D", "text": "Sports Hall"},
-    {"id": "E", "text": "Meeting Rooms"},
-    {"id": "F", "text": "Storage"},
-    {"id": "G", "text": "Staff Room"},
-    {"id": "H", "text": "Toilets"}
+    {"id": "A", "text": "Reception", "x": 25, "y": 70},
+    {"id": "B", "text": "Children's Play Area", "x": 75, "y": 20},
+    {"id": "C", "text": "Library", "x": 15, "y": 40},
+    {"id": "D", "text": "Sports Hall", "x": 75, "y": 40},
+    {"id": "E", "text": "Meeting Rooms", "x": 50, "y": 15},
+    {"id": "F", "text": "Storage", "x": 85, "y": 70},
+    {"id": "G", "text": "Staff Room", "x": 15, "y": 20},
+    {"id": "H", "text": "Toilets", "x": 85, "y": 15}
   ],
   "landmarks": [
-    {"id": "L1", "text": "Oak Street"},
-    {"id": "L2", "text": "Main Entrance"},
-    {"id": "L3", "text": "Café"},
-    {"id": "L4", "text": "Staircase"}
+    {"id": "L1", "text": "Oak Street", "x": 50, "y": 95},
+    {"id": "L2", "text": "Main Entrance", "x": 50, "y": 85},
+    {"id": "L3", "text": "Café", "x": 60, "y": 30},
+    {"id": "L4", "text": "Staircase", "x": 35, "y": 70}
   ],
+  "map_type": "floor_plan",
   "questions": [
     {"question_number": 1, "question_text": "Children's Play Area", "correct_answer": "B", "explanation": "Passage says it's in the northeast corner, behind the café"},
     {"question_number": 2, "question_text": "Library", "correct_answer": "C", "explanation": "Passage says it occupies the western wing, opposite the sports hall"},
@@ -1584,24 +1585,36 @@ Return ONLY valid JSON:
       return basePrompt + `2. Create a map labeling task with ${effectiveQuestionCount} locations.
 
 CRITICAL: Use directional language, NEVER say "at position B".
+Include x,y coordinates (0-100 percentage) for each label and landmark for map rendering.
 
 Return ONLY valid JSON:
 {
-  "dialogue": "Speaker1: The quilt shop is on Main Street, past the welcome center...<break time='2s'/>",
+  "dialogue": "Speaker1: Welcome to Historic Fairview. Let me show you around...<break time='1s'/> The quilt shop is on the west side of Main Street, just past the welcome center. <break time='2s'/> If you walk north along Main Street, you'll find the handicrafts museum on your right, directly across from the bank...",
   "speaker_names": {"Speaker1": "Tour Guide"},
   "instruction": "Label the map. Choose the correct letter, A-H.",
-  "map_description": "A street map with Oak Street at the top, Elm Street at the bottom.",
+  "map_description": "A street map showing the intersection of Oak Street and Main Street. Buildings are arranged along both streets.",
+  "map_type": "street_map",
   "map_labels": [
-    {"id": "A", "text": "Art Gallery"},
-    {"id": "B", "text": "Bookshop"},
-    {"id": "C", "text": "Museum"}
+    {"id": "A", "text": "Art Gallery", "x": 20, "y": 25},
+    {"id": "B", "text": "Bookshop", "x": 40, "y": 35},
+    {"id": "C", "text": "Museum", "x": 70, "y": 25},
+    {"id": "D", "text": "Quilt Shop", "x": 25, "y": 55},
+    {"id": "E", "text": "School House", "x": 75, "y": 55},
+    {"id": "F", "text": "Gift Shop", "x": 50, "y": 65},
+    {"id": "G", "text": "Café", "x": 80, "y": 35},
+    {"id": "H", "text": "Post Office", "x": 15, "y": 75}
   ],
   "landmarks": [
-    {"id": "L1", "text": "Bank"},
-    {"id": "L2", "text": "Welcome Center"}
+    {"id": "L1", "text": "Bank", "x": 55, "y": 25},
+    {"id": "L2", "text": "Welcome Center", "x": 30, "y": 45},
+    {"id": "L3", "text": "Oak Street", "x": 50, "y": 10},
+    {"id": "L4", "text": "Main Street", "x": 10, "y": 50},
+    {"id": "L5", "text": "Elm Street", "x": 50, "y": 90}
   ],
   "questions": [
-    {"question_number": 1, "question_text": "Museum", "correct_answer": "C", "explanation": "Guide says it's opposite the bank"}
+    {"question_number": 1, "question_text": "Quilt Shop", "correct_answer": "D", "explanation": "Guide says it's on west side of Main Street, past welcome center"},
+    {"question_number": 2, "question_text": "Museum", "correct_answer": "C", "explanation": "Guide says it's north on Main Street, across from the bank"},
+    {"question_number": 3, "question_text": "School House", "correct_answer": "E", "explanation": "Guide says it's on the east side, south of the café"}
   ]
 }`;
 
@@ -1951,7 +1964,8 @@ serve(async (req) => {
       if (questionType === 'MAP_LABELING') {
         groupOptions = {
           map_description: parsed.map_description,
-          map_labels: parsed.map_labels,
+          map_type: parsed.map_type || 'floor_plan',
+          map_labels: parsed.map_labels, // Now includes x,y coordinates
           landmarks: parsed.landmarks || [],
         };
       } else if (questionType === 'TABLE_COMPLETION') {

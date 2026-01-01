@@ -196,8 +196,8 @@ serve(async (req) => {
           body: JSON.stringify({
             contents,
             generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 4096,
+              temperature: 0.3, // Same as full test for consistency
+              maxOutputTokens: 6000, // Increased for complete model answers
               responseMimeType: 'application/json',
             },
           }),
@@ -332,7 +332,7 @@ function buildPartEvaluationContents(input: {
 
   const contents: Array<{ parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> }> = [];
 
-  // System prompt for single part evaluation
+  // System prompt for single part evaluation - MATCHES FULL TEST SCORING GUIDELINES
   contents.push({
     parts: [{
       text: `You are an expert IELTS Speaking examiner (2025 standard). You will evaluate Part ${partNumber} of a speaking test.
@@ -344,6 +344,23 @@ Listen to the audio for each question and:
 1. Transcribe the candidate's speech accurately
 2. Evaluate based on IELTS criteria
 3. Provide specific feedback for this part
+4. Generate a model answer for EVERY question
+
+CRITICAL SCORING GUIDELINES (USE CONSISTENTLY - SAME SCALE AS FULL TEST):
+Score each criterion INDEPENDENTLY. Use the same scoring standard as a full test evaluation:
+- Band 9: Native-level performance
+- Band 7: Good user with occasional inaccuracies  
+- Band 5: Modest user with noticeable limitations
+- Band 3: Limited user with frequent errors
+
+IMPORTANT: Do NOT inflate scores just because this is a single part. Apply the EXACT same standards as a full test.
+Use half-band scores (5.5, 6.5, 7.5) when appropriate.
+
+MODEL ANSWERS REQUIREMENT:
+You MUST provide a model answer for EVERY question in this part. Show:
+- What the candidate actually said
+- An exemplary Band 8-9 model answer
+- Key features that make the model answer strong
 
 Respond with JSON in this exact format:
 {
@@ -354,9 +371,11 @@ Respond with JSON in this exact format:
   "strengths": string[],
   "improvements": string[],
   "partFeedback": string,
-  "modelAnswers": [{"question": string, "candidateResponse": string, "modelAnswer": string, "keyFeatures": string[]}],
+  "modelAnswers": [{"questionNumber": number, "question": string, "candidateResponse": string, "modelAnswer": string, "keyFeatures": string[]}],
   "transcripts": { "part${partNumber}-q<id>": string }
-}`,
+}
+
+CRITICAL: The "modelAnswers" array MUST contain an entry for EVERY question in this part.`,
     }],
   });
 

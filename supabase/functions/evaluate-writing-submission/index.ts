@@ -54,78 +54,74 @@ async function getActiveGeminiKeys(serviceClient: any): Promise<ApiKeyRecord[]> 
   }
 }
 
-// Check credits (returns error if limit reached)
-async function checkCredits(
+// ============================================================================
+// ATOMIC CREDIT FUNCTIONS - Uses DB functions to prevent race conditions
+// ============================================================================
+
+// Check and RESERVE credits atomically BEFORE calling AI
+async function checkAndReserveCredits(
   serviceClient: any, 
   userId: string, 
   operationType: keyof typeof COSTS
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; creditsUsed?: number; creditsRemaining?: number }> {
   const cost = COSTS[operationType] || 0;
-  if (cost === 0) return { ok: true };
-  
-  const today = new Date().toISOString().split('T')[0];
+  if (cost === 0) return { ok: true, creditsUsed: 0, creditsRemaining: DAILY_CREDIT_LIMIT };
   
   try {
-    const { data: profile } = await serviceClient
-      .from('profiles')
-      .select('daily_credits_used, last_reset_date')
-      .eq('id', userId)
-      .single();
+    const { data, error } = await serviceClient.rpc('check_and_reserve_credits', {
+      p_user_id: userId,
+      p_cost: cost
+    });
     
-    if (!profile) return { ok: true };
-    
-    let currentCreditsUsed = profile.daily_credits_used || 0;
-    if (profile.last_reset_date !== today) {
-      currentCreditsUsed = 0;
-      await serviceClient
-        .from('profiles')
-        .update({ daily_credits_used: 0, last_reset_date: today })
-        .eq('id', userId);
+    if (error) {
+      console.error('check_and_reserve_credits RPC error:', error);
+      return { ok: true, creditsUsed: 0, creditsRemaining: DAILY_CREDIT_LIMIT };
     }
     
-    if (currentCreditsUsed + cost > DAILY_CREDIT_LIMIT) {
-      return { 
-        ok: false, 
-        error: `Daily credit limit reached (${currentCreditsUsed}/${DAILY_CREDIT_LIMIT}). Add your own Gemini API key in Settings.`
+    console.log(`Credit check result for ${operationType} (cost ${cost}):`, data);
+    
+    if (!data.ok) {
+      return {
+        ok: false,
+        error: data.error || `Daily credit limit reached. Add your own Gemini API key in Settings.`,
+        creditsUsed: data.credits_used,
+        creditsRemaining: data.credits_remaining
       };
     }
     
-    return { ok: true };
+    return {
+      ok: true,
+      creditsUsed: data.credits_used,
+      creditsRemaining: data.credits_remaining
+    };
   } catch (err) {
-    console.error('Error in credit check:', err);
-    return { ok: true };
+    console.error('Error in atomic credit check:', err);
+    return { ok: true, creditsUsed: 0, creditsRemaining: DAILY_CREDIT_LIMIT };
   }
 }
 
-// Deduct credits after successful operation
-async function deductCredits(serviceClient: any, userId: string, operationType: keyof typeof COSTS): Promise<void> {
+// Refund credits if the AI operation fails AFTER we reserved them
+async function refundCredits(
+  serviceClient: any, 
+  userId: string, 
+  operationType: keyof typeof COSTS
+): Promise<void> {
   const cost = COSTS[operationType] || 0;
   if (cost === 0) return;
   
-  const today = new Date().toISOString().split('T')[0];
-  
   try {
-    const { data: profile } = await serviceClient
-      .from('profiles')
-      .select('daily_credits_used, last_reset_date')
-      .eq('id', userId)
-      .single();
+    const { error } = await serviceClient.rpc('refund_credits', {
+      p_user_id: userId,
+      p_cost: cost
+    });
     
-    if (!profile) return;
-    
-    let currentCreditsUsed = profile.daily_credits_used || 0;
-    if (profile.last_reset_date !== today) {
-      currentCreditsUsed = 0;
+    if (error) {
+      console.error('refund_credits RPC error:', error);
+    } else {
+      console.log(`Refunded ${cost} credits for failed ${operationType}`);
     }
-    
-    await serviceClient
-      .from('profiles')
-      .update({ daily_credits_used: currentCreditsUsed + cost, last_reset_date: today })
-      .eq('id', userId);
-    
-    console.log(`Deducted ${cost} credits for ${operationType}. New total: ${currentCreditsUsed + cost}/${DAILY_CREDIT_LIMIT}`);
   } catch (err) {
-    console.error('Failed to deduct credits:', err);
+    console.error('Failed to refund credits:', err);
   }
 }
 
@@ -300,9 +296,10 @@ serve(async (req) => {
       throw new Error('No API key available. Please add your Gemini API key in Settings.');
     }
 
-    // Credit check for system pool users
+    // Credit check and reserve for system pool users (atomic to prevent race conditions)
+    let creditsReserved = false;
     if (!isUserProvidedKey) {
-      const creditCheck = await checkCredits(serviceClient, user.id, 'evaluate_writing');
+      const creditCheck = await checkAndReserveCredits(serviceClient, user.id, 'evaluate_writing');
       if (!creditCheck.ok) {
         return new Response(JSON.stringify({ 
           error: creditCheck.error,
@@ -312,6 +309,8 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      creditsReserved = true;
+      console.log(`Credits reserved: ${creditCheck.creditsUsed}/${DAILY_CREDIT_LIMIT}`);
     }
 
     // 4. Call Gemini API for evaluation with fallback models
@@ -583,10 +582,7 @@ IMPORTANT: Write your feedback as a teacher speaking directly to the student. Us
       }
     }
 
-    // Deduct credits on success (only for system pool users)
-    if (!isUserProvidedKey) {
-      await deductCredits(serviceClient, user.id, 'evaluate_writing');
-    }
+    // Credits already reserved atomically - no deduction needed
 
     return new Response(JSON.stringify({ message: 'Evaluation completed successfully', overallBand, evaluationReport }), {
       status: 200,

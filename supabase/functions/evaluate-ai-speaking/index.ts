@@ -241,8 +241,8 @@ serve(async (req) => {
           body: JSON.stringify({
             contents,
           generationConfig: {
-              temperature: 0.5, // Higher temperature for more varied, nuanced scoring
-              maxOutputTokens: 8192,
+              temperature: 0.3, // Lower temperature for more consistent scoring
+              maxOutputTokens: 12000, // Increased for complete model answers
               responseMimeType: 'application/json',
             },
           }),
@@ -516,7 +516,7 @@ If there is no speech in the audio, score appropriately and explain why.
 
 ${topic ? `TEST TOPIC: ${topic}\n` : ''}${difficulty ? `DIFFICULTY: ${difficulty}\n` : ''}${typeof part2SpeakingDuration === 'number' ? `PART 2 SPEAKING DURATION: ${Math.floor(part2SpeakingDuration)} seconds\n` : ''}${fluencyFlag ? `FLUENCY FLAG: Part 2 was below 80 seconds\n` : ''}
 
-CRITICAL SCORING GUIDELINES:
+CRITICAL SCORING GUIDELINES (USE CONSISTENTLY - SAME SCALE FOR FULL TEST OR INDIVIDUAL PARTS):
 You MUST score each criterion INDEPENDENTLY based on the specific evidence you observe. Each criterion measures DIFFERENT skills:
 
 FLUENCY & COHERENCE (assess speech flow and organization):
@@ -543,12 +543,19 @@ PRONUNCIATION (assess clarity, intonation, stress patterns):
 - Band 5: Shows all positive features of Band 4 and some of Band 6; may mispronounce some words
 - Band 3: Shows some features of Band 2 and some of Band 4; causes some strain for the listener
 
-IMPORTANT: 
+IMPORTANT SCORING NOTES:
 - A candidate with excellent vocabulary but poor grammar should show DIFFERENT scores for those criteria
 - A fluent speaker with poor pronunciation should score HIGH on fluency but LOWER on pronunciation
 - Score each criterion based ONLY on the evidence relevant to that skill
 - Use half-band scores (5.5, 6.5, 7.5) when performance falls between bands
-- Justify each score with specific examples from the audio
+- The overall band should be calculated as the average of all four criteria, rounded to the nearest 0.5
+- Apply the SAME scoring standard whether evaluating a single part or the full test (do NOT inflate scores for full tests)
+
+MODEL ANSWERS REQUIREMENT:
+You MUST provide a model answer for EVERY question asked in the test. For each question:
+- Show what the candidate actually said (candidateResponse)
+- Provide an exemplary Band 8-9 model answer that a native speaker or expert would give
+- List key features that make the model answer strong
 
 Respond with JSON in this exact format:
 {
@@ -563,13 +570,15 @@ Respond with JSON in this exact format:
     {"partNumber": 3, "strengths": string[], "improvements": string[]}
   ],
   "modelAnswers": [
-    {"partNumber": number, "question": string, "candidateResponse": string, "modelAnswer": string, "keyFeatures": string[]}
+    {"partNumber": number, "questionNumber": number, "question": string, "candidateResponse": string, "modelAnswer": string, "keyFeatures": string[]}
   ],
   "summary": string,
   "keyStrengths": string[],
   "priorityImprovements": string[],
   "transcripts": { "part1-q<id>": string, "part2-q<id>": string, "part3-q<id>": string }
-}`;
+}
+
+CRITICAL: The "modelAnswers" array MUST contain an entry for EVERY question from ALL parts.`;
 }
 
 function normalizeEvaluationResponse(data: any): any {
