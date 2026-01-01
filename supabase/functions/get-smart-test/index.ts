@@ -1,0 +1,180 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Create client with user's token if available
+    const token = authHeader?.replace("Bearer ", "");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    let userId: string | null = null;
+    if (token && token !== supabaseAnonKey) {
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
+    const { module, topic, excludeTestIds, preferredAccent } = await req.json();
+
+    if (!module) {
+      return new Response(JSON.stringify({ error: "Module is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Build query for smart test selection
+    let query = supabase
+      .from("generated_test_audio")
+      .select("*")
+      .eq("module", module)
+      .eq("is_published", true)
+      .eq("status", "ready");
+
+    // Filter by topic if provided
+    if (topic) {
+      query = query.eq("topic", topic);
+    }
+
+    // Get all matching tests
+    const { data: allTests, error } = await query;
+
+    if (error) {
+      console.error("Query error:", error);
+      return new Response(JSON.stringify({ error: "Failed to fetch tests" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!allTests || allTests.length === 0) {
+      return new Response(JSON.stringify({ error: "No tests available", code: "NO_TESTS" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // If user is logged in, get their test history for LRU selection
+    let recentTestIds: string[] = [];
+    let recentAccents: string[] = [];
+
+    if (userId) {
+      const { data: history } = await supabase
+        .from("user_test_history")
+        .select("test_id")
+        .eq("user_id", userId)
+        .order("taken_at", { ascending: false })
+        .limit(20);
+
+      if (history) {
+        recentTestIds = history.map((h) => h.test_id);
+      }
+
+      // Get recent accents from test history
+      if (recentTestIds.length > 0) {
+        const { data: recentTests } = await supabase
+          .from("generated_test_audio")
+          .select("accent")
+          .in("id", recentTestIds.slice(0, 5));
+
+        if (recentTests) {
+          recentAccents = recentTests.map((t) => t.accent).filter(Boolean) as string[];
+        }
+      }
+    }
+
+    // Also exclude any explicitly passed test IDs
+    if (excludeTestIds && Array.isArray(excludeTestIds)) {
+      recentTestIds = [...new Set([...recentTestIds, ...excludeTestIds])];
+    }
+
+    // Smart selection algorithm:
+    // 1. Filter out recently taken tests
+    // 2. Prefer accents user hasn't heard recently
+    // 3. Sort by least used (times_used) and oldest (last_used_at)
+
+    let availableTests = allTests.filter((t) => !recentTestIds.includes(t.id));
+
+    // If all tests have been taken, fall back to all tests (LRU)
+    if (availableTests.length === 0) {
+      availableTests = allTests;
+    }
+
+    // Score tests for selection
+    const scoredTests = availableTests.map((test) => {
+      let score = 0;
+
+      // Prefer tests with accents user hasn't heard recently
+      if (test.accent && !recentAccents.includes(test.accent)) {
+        score += 10;
+      }
+
+      // Prefer preferred accent if specified
+      if (preferredAccent && test.accent === preferredAccent) {
+        score += 5;
+      }
+
+      // Prefer less used tests
+      score -= (test.times_used || 0) * 2;
+
+      // Add some randomness
+      score += Math.random() * 5;
+
+      return { test, score };
+    });
+
+    // Sort by score (highest first) and pick the best
+    scoredTests.sort((a, b) => b.score - a.score);
+    const selectedTest = scoredTests[0].test;
+
+    // Update usage stats
+    await supabase
+      .from("generated_test_audio")
+      .update({
+        times_used: (selectedTest.times_used || 0) + 1,
+        last_used_at: new Date().toISOString(),
+      })
+      .eq("id", selectedTest.id);
+
+    // Record in user history if logged in
+    if (userId) {
+      await supabase
+        .from("user_test_history")
+        .upsert(
+          {
+            user_id: userId,
+            test_id: selectedTest.id,
+            taken_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,test_id" }
+        );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        test: selectedTest,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("get-smart-test error:", error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});

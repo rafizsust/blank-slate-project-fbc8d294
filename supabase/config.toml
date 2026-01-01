@@ -62,3 +62,15 @@ verify_jwt = true
 
 [functions.upload-media]
 verify_jwt = false
+
+[functions.bulk-generate-tests]
+verify_jwt = true
+
+[functions.get-job-status]
+verify_jwt = true
+
+[functions.get-smart-test]
+verify_jwt = false
+
+[functions.publish-generated-tests]
+verify_jwt = true

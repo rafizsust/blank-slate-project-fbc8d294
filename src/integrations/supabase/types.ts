@@ -201,6 +201,57 @@ export type Database = {
         }
         Relationships: []
       }
+      bulk_generation_jobs: {
+        Row: {
+          admin_user_id: string
+          completed_at: string | null
+          created_at: string
+          difficulty: string
+          error_log: Json | null
+          failure_count: number
+          id: string
+          module: string
+          quantity: number
+          started_at: string | null
+          status: string
+          success_count: number
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          completed_at?: string | null
+          created_at?: string
+          difficulty: string
+          error_log?: Json | null
+          failure_count?: number
+          id?: string
+          module: string
+          quantity: number
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string
+          error_log?: Json | null
+          failure_count?: number
+          id?: string
+          module?: string
+          quantity?: number
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       flashcard_cards: {
         Row: {
           correct_count: number
@@ -313,6 +364,77 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      generated_test_audio: {
+        Row: {
+          accent: string | null
+          audio_duration_seconds: number | null
+          audio_url: string | null
+          content_payload: Json
+          created_at: string
+          difficulty: string
+          id: string
+          is_published: boolean
+          job_id: string | null
+          last_used_at: string | null
+          module: string
+          sample_audio_url: string | null
+          status: string
+          times_used: number
+          topic: string
+          transcript: string | null
+          updated_at: string
+          voice_id: string | null
+        }
+        Insert: {
+          accent?: string | null
+          audio_duration_seconds?: number | null
+          audio_url?: string | null
+          content_payload?: Json
+          created_at?: string
+          difficulty: string
+          id?: string
+          is_published?: boolean
+          job_id?: string | null
+          last_used_at?: string | null
+          module: string
+          sample_audio_url?: string | null
+          status?: string
+          times_used?: number
+          topic: string
+          transcript?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Update: {
+          accent?: string | null
+          audio_duration_seconds?: number | null
+          audio_url?: string | null
+          content_payload?: Json
+          created_at?: string
+          difficulty?: string
+          id?: string
+          is_published?: boolean
+          job_id?: string | null
+          last_used_at?: string | null
+          module?: string
+          sample_audio_url?: string | null
+          status?: string
+          times_used?: number
+          topic?: string
+          transcript?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_test_audio_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_generation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       listening_question_groups: {
         Row: {
@@ -1218,6 +1340,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_test_history: {
+        Row: {
+          id: string
+          taken_at: string
+          test_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          taken_at?: string
+          test_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          taken_at?: string
+          test_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_test_history_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "generated_test_audio"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       writing_submissions: {
         Row: {
