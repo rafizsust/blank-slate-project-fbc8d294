@@ -30,6 +30,89 @@ function getRandomVoice(preferredAccent?: string): { voiceName: string; accent: 
   return { voiceName, accent };
 }
 
+// API Key management for round-robin Gemini TTS
+interface ApiKeyRecord {
+  id: string;
+  provider: string;
+  key_value: string;
+  is_active: boolean;
+  error_count: number;
+}
+
+let apiKeyCache: ApiKeyRecord[] = [];
+let currentKeyIndex = 0;
+
+async function getActiveGeminiKeys(supabaseServiceClient: any): Promise<ApiKeyRecord[]> {
+  try {
+    const { data, error } = await supabaseServiceClient
+      .from('api_keys')
+      .select('id, provider, key_value, is_active, error_count')
+      .eq('provider', 'gemini')
+      .eq('is_active', true)
+      .order('error_count', { ascending: true });
+    
+    if (error) {
+      console.error('Failed to fetch API keys:', error);
+      return [];
+    }
+    
+    console.log(`Found ${data?.length || 0} active Gemini keys in api_keys table`);
+    return data || [];
+  } catch (err) {
+    console.error('Error fetching API keys:', err);
+    return [];
+  }
+}
+
+async function incrementKeyErrorCount(supabaseServiceClient: any, keyId: string, deactivate: boolean = false): Promise<void> {
+  try {
+    if (!deactivate) {
+      const { data: currentKey } = await supabaseServiceClient
+        .from('api_keys')
+        .select('error_count')
+        .eq('id', keyId)
+        .single();
+      
+      if (currentKey) {
+        await supabaseServiceClient
+          .from('api_keys')
+          .update({ 
+            error_count: (currentKey.error_count || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', keyId);
+      }
+    } else {
+      await supabaseServiceClient
+        .from('api_keys')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', keyId);
+    }
+    
+    console.log(`Updated key ${keyId}: ${deactivate ? 'deactivated' : 'incremented error count'}`);
+  } catch (err) {
+    console.error('Failed to update key error count:', err);
+  }
+}
+
+async function resetKeyErrorCount(supabaseServiceClient: any, keyId: string): Promise<void> {
+  try {
+    await supabaseServiceClient
+      .from('api_keys')
+      .update({ error_count: 0, updated_at: new Date().toISOString() })
+      .eq('id', keyId);
+  } catch (err) {
+    console.error('Failed to reset key error count:', err);
+  }
+}
+
+function getNextApiKey(): ApiKeyRecord | null {
+  if (apiKeyCache.length === 0) return null;
+  const key = apiKeyCache[currentKeyIndex % apiKeyCache.length];
+  currentKeyIndex = (currentKeyIndex + 1) % apiKeyCache.length;
+  return key;
+}
+
 // Retry helper with exponential backoff
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -244,7 +327,7 @@ async function processGenerationJob(
         if (scriptText.trim()) {
           try {
             audioUrl = await withRetry(
-              () => generateAndUploadAudio(scriptText, voiceName, monologue, jobId, i),
+              () => generateAndUploadAudio(supabase, scriptText, voiceName, monologue, jobId, i),
               3,
               3000
             );
@@ -260,7 +343,7 @@ async function processGenerationJob(
       if (module === "speaking") {
         try {
           const speakingAudioUrls = await withRetry(
-            () => generateSpeakingAudio(content, voiceName, jobId, i),
+            () => generateSpeakingAudio(supabase, content, voiceName, jobId, i),
             2,
             2000
           );
@@ -742,17 +825,90 @@ Return ONLY valid JSON:
 }`;
 }
 
+// Direct Gemini TTS call using api_keys table (for bulk generation without user context)
+async function generateGeminiTtsDirect(
+  supabaseServiceClient: any,
+  text: string,
+  voiceName: string
+): Promise<{ audioBase64: string; sampleRate: number }> {
+  // Ensure we have API keys cached
+  if (apiKeyCache.length === 0) {
+    apiKeyCache = await getActiveGeminiKeys(supabaseServiceClient);
+    if (apiKeyCache.length === 0) {
+      throw new Error("No active Gemini API keys available in api_keys table");
+    }
+  }
+
+  const prompt = `You are an IELTS Speaking examiner with a neutral British accent.\n\nRead aloud EXACTLY the following text. Do not add, remove, or paraphrase anything. Use natural pacing and clear pronunciation.\n\n"""\n${text}\n"""`;
+
+  // Try each API key in rotation
+  let lastError: Error | null = null;
+  const keysToTry = Math.min(apiKeyCache.length, 3);
+  
+  for (let i = 0; i < keysToTry; i++) {
+    const keyRecord = getNextApiKey();
+    if (!keyRecord) continue;
+    
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${keyRecord.key_value}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseModalities: ["AUDIO"],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName },
+                },
+              },
+            },
+          }),
+        }
+      );
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        console.error(`Gemini TTS error with key ${keyRecord.id}:`, resp.status, errorText.slice(0, 200));
+        
+        // Track error for this key
+        await incrementKeyErrorCount(supabaseServiceClient, keyRecord.id, resp.status === 401 || resp.status === 403);
+        lastError = new Error(`Gemini TTS failed (${resp.status})`);
+        continue;
+      }
+
+      const data = await resp.json();
+      const audioData = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data as string | undefined;
+      
+      if (!audioData) {
+        lastError = new Error("No audio returned from Gemini TTS");
+        continue;
+      }
+      
+      // Success - reset error count
+      await resetKeyErrorCount(supabaseServiceClient, keyRecord.id);
+      
+      return { audioBase64: audioData, sampleRate: 24000 };
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.error(`Gemini TTS attempt with key ${keyRecord.id} failed:`, lastError.message);
+    }
+  }
+
+  throw lastError || new Error("All Gemini API keys failed");
+}
+
 // Generate and upload audio for listening tests
 async function generateAndUploadAudio(
+  supabaseServiceClient: any,
   text: string,
   voiceName: string,
   monologue: boolean,
   jobId: string,
   index: number
 ): Promise<string> {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  
   // Clean text for TTS
   const cleanText = text
     .replace(/\[pause\s*\d*s?\]/gi, "...")
@@ -764,71 +920,15 @@ async function generateAndUploadAudio(
     throw new Error("Empty text for TTS");
   }
 
-  // Try Edge TTS first (free)
-  try {
-    const edgeResponse = await fetch(`${supabaseUrl}/functions/v1/generate-edge-tts`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${supabaseServiceKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: [{ key: `test_${index}`, text: cleanText }],
-        accent: "GB",
-        monologue,
-      }),
-    });
-
-    if (edgeResponse.ok) {
-      const edgeData = await edgeResponse.json();
-      
-      if (edgeData.success && edgeData.clips?.[0]?.audioBase64) {
-        const { uploadToR2 } = await import("../_shared/r2Client.ts");
-        const audioBytes = Uint8Array.from(atob(edgeData.clips[0].audioBase64), c => c.charCodeAt(0));
-        const key = `generated-tests/${jobId}/${index}.mp3`;
-        
-        const uploadResult = await uploadToR2(key, audioBytes, "audio/mpeg");
-        if (uploadResult.success && uploadResult.url) {
-          console.log(`[Job ${jobId}] Edge TTS success for test ${index + 1}`);
-          return uploadResult.url;
-        }
-      }
-    }
-    
-    console.warn(`[Job ${jobId}] Edge TTS failed, trying Gemini TTS fallback`);
-  } catch (edgeErr) {
-    console.warn(`[Job ${jobId}] Edge TTS error:`, edgeErr);
-  }
-
-  // Fallback to Gemini TTS
-  const response = await fetch(`${supabaseUrl}/functions/v1/generate-gemini-tts`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${supabaseServiceKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      items: [{ key: `test_${index}`, text: cleanText }],
-      voiceName,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini TTS failed: ${response.status} - ${errorText.slice(0, 200)}`);
-  }
-
-  const data = await response.json();
-  
-  if (!data.success || !data.clips?.[0]?.audioBase64) {
-    throw new Error("No audio data in TTS response");
-  }
+  // Use Gemini TTS directly with api_keys table (round-robin)
+  const { audioBase64, sampleRate } = await generateGeminiTtsDirect(
+    supabaseServiceClient,
+    cleanText,
+    voiceName
+  );
 
   // Convert base64 PCM to WAV and upload to R2
-  const pcmBase64 = data.clips[0].audioBase64;
-  const sampleRate = data.clips[0].sampleRate || 24000;
-  
-  const pcmBytes = Uint8Array.from(atob(pcmBase64), c => c.charCodeAt(0));
+  const pcmBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
   const wavBytes = createWavFromPcm(pcmBytes, sampleRate);
   
   const { uploadToR2 } = await import("../_shared/r2Client.ts");
@@ -845,14 +945,12 @@ async function generateAndUploadAudio(
 
 // Generate speaking audio for instructions and questions
 async function generateSpeakingAudio(
+  supabaseServiceClient: any,
   content: any,
   voiceName: string,
   jobId: string,
   index: number
 ): Promise<Record<string, string> | null> {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  
   const audioUrls: Record<string, string> = {};
   const ttsItems: Array<{ key: string; text: string }> = [];
   
@@ -896,91 +994,38 @@ async function generateSpeakingAudio(
     return null;
   }
 
-  console.log(`[Job ${jobId}] Generating audio for ${ttsItems.length} speaking items`);
+  console.log(`[Job ${jobId}] Generating audio for ${ttsItems.length} speaking items using Gemini TTS (api_keys table)`);
 
-  // Try Edge TTS first
-  try {
-    const edgeResponse = await fetch(`${supabaseUrl}/functions/v1/generate-edge-tts`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${supabaseServiceKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: ttsItems,
-        accent: "GB",
-      }),
-    });
+  const { uploadToR2 } = await import("../_shared/r2Client.ts");
 
-    if (edgeResponse.ok) {
-      const edgeData = await edgeResponse.json();
+  // Generate each item using direct Gemini TTS with api_keys rotation
+  for (const item of ttsItems) {
+    try {
+      const { audioBase64, sampleRate } = await generateGeminiTtsDirect(
+        supabaseServiceClient,
+        item.text,
+        voiceName
+      );
       
-      if (edgeData.success && edgeData.clips?.length > 0) {
-        const { uploadToR2 } = await import("../_shared/r2Client.ts");
-        
-        for (const clip of edgeData.clips) {
-          const audioBytes = Uint8Array.from(atob(clip.audioBase64), c => c.charCodeAt(0));
-          const key = `speaking-tests/${jobId}/${index}/${clip.key}.mp3`;
-          
-          const uploadResult = await uploadToR2(key, audioBytes, "audio/mpeg");
-          if (uploadResult.success && uploadResult.url) {
-            audioUrls[clip.key] = uploadResult.url;
-          }
-        }
-        
-        console.log(`[Job ${jobId}] Edge TTS generated ${Object.keys(audioUrls).length} audio files`);
-        return Object.keys(audioUrls).length > 0 ? audioUrls : null;
-      }
-    }
-    
-    console.warn(`[Job ${jobId}] Edge TTS failed, trying Gemini TTS fallback`);
-  } catch (edgeErr) {
-    console.warn(`[Job ${jobId}] Edge TTS error:`, edgeErr);
-  }
-
-  // Fallback to Gemini TTS
-  try {
-    const geminiResponse = await fetch(`${supabaseUrl}/functions/v1/generate-gemini-tts`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${supabaseServiceKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: ttsItems,
-        voiceName,
-      }),
-    });
-
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini TTS failed: ${geminiResponse.status}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-
-    if (!geminiData.success || !geminiData.clips?.length) {
-      throw new Error("No audio from Gemini TTS");
-    }
-
-    const { uploadToR2 } = await import("../_shared/r2Client.ts");
-
-    for (const clip of geminiData.clips) {
-      const pcmBytes = Uint8Array.from(atob(clip.audioBase64), c => c.charCodeAt(0));
-      const wavBytes = createWavFromPcm(pcmBytes, clip.sampleRate || 24000);
-      const key = `speaking-tests/${jobId}/${index}/${clip.key}.wav`;
+      const pcmBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+      const wavBytes = createWavFromPcm(pcmBytes, sampleRate);
+      const key = `speaking-tests/${jobId}/${index}/${item.key}.wav`;
 
       const uploadResult = await uploadToR2(key, wavBytes, "audio/wav");
       if (uploadResult.success && uploadResult.url) {
-        audioUrls[clip.key] = uploadResult.url;
+        audioUrls[item.key] = uploadResult.url;
       }
+      
+      // Small delay between requests to avoid rate limiting
+      await new Promise(r => setTimeout(r, 300));
+    } catch (err) {
+      console.warn(`[Job ${jobId}] Failed to generate audio for ${item.key}:`, err);
+      // Continue with other items - speaking can use browser TTS fallback
     }
-
-    console.log(`[Job ${jobId}] Gemini TTS fallback generated ${Object.keys(audioUrls).length} audio files`);
-    return Object.keys(audioUrls).length > 0 ? audioUrls : null;
-  } catch (geminiErr) {
-    console.error(`[Job ${jobId}] Gemini TTS fallback also failed:`, geminiErr);
-    throw geminiErr;
   }
+
+  console.log(`[Job ${jobId}] Generated ${Object.keys(audioUrls).length}/${ttsItems.length} speaking audio files`);
+  return Object.keys(audioUrls).length > 0 ? audioUrls : null;
 }
 
 function createWavFromPcm(pcmData: Uint8Array, sampleRate: number): Uint8Array {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { 
   Factory, 
@@ -29,6 +30,9 @@ import {
   PenLine,
   Trash2,
   RotateCcw,
+  Filter,
+  X,
+  Calendar,
 } from "lucide-react";
 import { 
   READING_TOPICS, 
@@ -168,11 +172,43 @@ export default function TestFactoryAdmin() {
   const [jobTests, setJobTests] = useState<GeneratedTest[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   
+  // Filter state
+  const [filterModule, setFilterModule] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterDateFrom, setFilterDateFrom] = useState<string>("");
+  const [filterDateTo, setFilterDateTo] = useState<string>("");
+  
   // Preview & Delete state
   const [previewTest, setPreviewTest] = useState<GeneratedTest | null>(null);
   const [deleteTestId, setDeleteTestId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [retryingTestId, setRetryingTestId] = useState<string | null>(null);
+
+  // Filtered jobs
+  const filteredJobs = useMemo(() => {
+    return jobs.filter(job => {
+      if (filterModule !== "all" && job.module !== filterModule) return false;
+      if (filterStatus !== "all" && job.status !== filterStatus) return false;
+      if (filterDateFrom) {
+        const jobDate = new Date(job.created_at).toISOString().split('T')[0];
+        if (jobDate < filterDateFrom) return false;
+      }
+      if (filterDateTo) {
+        const jobDate = new Date(job.created_at).toISOString().split('T')[0];
+        if (jobDate > filterDateTo) return false;
+      }
+      return true;
+    });
+  }, [jobs, filterModule, filterStatus, filterDateFrom, filterDateTo]);
+
+  const hasActiveFilters = filterModule !== "all" || filterStatus !== "all" || filterDateFrom || filterDateTo;
+
+  const clearFilters = () => {
+    setFilterModule("all");
+    setFilterStatus("all");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+  };
 
   // Reset topic and question type when module changes
   useEffect(() => {
@@ -660,8 +696,75 @@ export default function TestFactoryAdmin() {
           {/* Jobs List */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Generation Jobs</CardTitle>
-              <CardDescription>Monitor your bulk generation jobs (AI Tests only)</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Generation Jobs</CardTitle>
+                  <CardDescription>Monitor your bulk generation jobs (AI Tests only)</CardDescription>
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+              
+              {/* Filters */}
+              <div className="flex flex-wrap gap-3 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Filters:</span>
+                </div>
+                
+                <Select value={filterModule} onValueChange={setFilterModule}>
+                  <SelectTrigger className="w-[130px] h-8">
+                    <SelectValue placeholder="Module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Modules</SelectItem>
+                    {MODULES.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        <div className="flex items-center gap-2">
+                          <m.icon className="h-3 w-3" />
+                          {m.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[130px] h-8">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    className="w-[130px] h-8"
+                    placeholder="From"
+                  />
+                  <span className="text-muted-foreground">to</span>
+                  <Input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    className="w-[130px] h-8"
+                    placeholder="To"
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -669,13 +772,15 @@ export default function TestFactoryAdmin() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : jobs.length === 0 ? (
+                ) : filteredJobs.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No generation jobs yet. Start your first one!
+                    {jobs.length === 0 
+                      ? "No generation jobs yet. Start your first one!"
+                      : "No jobs match the current filters."}
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {jobs.map((job) => (
+                    {filteredJobs.map((job) => (
                       <Card
                         key={job.id}
                         className={`cursor-pointer transition-colors hover:bg-muted/50 ${
@@ -734,6 +839,10 @@ export default function TestFactoryAdmin() {
                               )}
                             </div>
                           )}
+                          
+                          <div className="text-xs text-muted-foreground mt-2">
+                            {new Date(job.created_at).toLocaleString()}
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
