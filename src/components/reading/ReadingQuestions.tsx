@@ -418,11 +418,16 @@ export function ReadingQuestions({
             // Title options are inside groupMeta.options (the JSON options column)
             const groupOptions = groupMeta?.options || {};
             
-            // Extract word bank - handle both DB format (options.options) and AI format (options.word_bank)
+            // Extract word bank - handle both DB format (options.options) and AI format (options.word_bank/wordBank)
             const extractWordBank = () => {
-              // AI-generated format: word_bank is array of {id, text} objects
+              // AI-generated formats: word_bank / wordBank is array of {id, text} objects
               if (Array.isArray(groupOptions?.word_bank)) {
-                return groupOptions.word_bank.map((w: any) => 
+                return groupOptions.word_bank.map((w: any) =>
+                  typeof w === 'string' ? w : w.id || ''
+                );
+              }
+              if (Array.isArray(groupOptions?.wordBank)) {
+                return groupOptions.wordBank.map((w: any) =>
                   typeof w === 'string' ? w : w.id || ''
                 );
               }
@@ -431,7 +436,7 @@ export function ReadingQuestions({
               if (Array.isArray(groupOptions)) return groupOptions;
               return [];
             };
-            
+
             const fillDisplay = {
               // Check both DB format (groupMeta.field) and AI-generated format (groupOptions.field)
               displayAsParagraph: !!groupMeta?.display_as_paragraph || !!groupOptions?.display_as_paragraph,
@@ -442,7 +447,11 @@ export function ReadingQuestions({
               titleColored: !!groupOptions?.title_colored,
               useDropdown: !!groupMeta?.use_dropdown || !!groupOptions?.use_dropdown,
               wordBank: extractWordBank(),
-              wordBankWithText: Array.isArray(groupOptions?.word_bank) ? groupOptions.word_bank : [], // For displaying with text
+              wordBankWithText: Array.isArray(groupOptions?.word_bank)
+                ? groupOptions.word_bank
+                : Array.isArray(groupOptions?.wordBank)
+                  ? groupOptions.wordBank
+                  : [], // For displaying with text
               noteStyleEnabled: !!groupOptions?.note_style_enabled,
               noteCategories: groupOptions?.note_categories || [],
               paragraphText: groupOptions?.paragraph_text || '', // For paragraph display mode

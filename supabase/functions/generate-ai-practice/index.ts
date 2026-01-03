@@ -2191,9 +2191,84 @@ serve(async (req) => {
               if (!groupOptions.max_answers) {
                 groupOptions = { ...groupOptions, max_answers: 3 };
               }
-              
+
               // For MCMA, also copy options to each question for the renderer
               console.log(`[MCMA Preset] max_answers: ${groupOptions.max_answers}, options count: ${normalizedOptions.length}`);
+            }
+
+            // Summary completion (word bank) presets: normalize summary_text + word_bank into group options
+            // so the test-taker renderer can show the paragraph + draggable word bank.
+            if (type === 'SUMMARY_COMPLETION' || type === 'SUMMARY_WORD_BANK') {
+              if (Array.isArray(groupOptions)) {
+                groupOptions = { options: groupOptions };
+              }
+              if (!groupOptions || typeof groupOptions !== 'object') {
+                groupOptions = {};
+              }
+
+              const summaryTextRaw =
+                g?.summary_text ??
+                g?.summaryText ??
+                (g?.options && typeof g.options === 'object'
+                  ? (g.options.summary_text ?? g.options.summaryText ?? g.options.content)
+                  : undefined) ??
+                payload?.summary_text ??
+                payload?.summaryText ??
+                payload?.content ??
+                payload?.summary ??
+                payload?.paragraph_text ??
+                '';
+
+              const wordBankRaw =
+                g?.word_bank ??
+                g?.wordBank ??
+                (g?.options && typeof g.options === 'object'
+                  ? (g.options.word_bank ?? g.options.wordBank)
+                  : undefined) ??
+                payload?.word_bank ??
+                payload?.wordBank ??
+                [];
+
+              const normalizeWordBank = (raw: any): Array<{ id: string; text: string }> => {
+                if (!Array.isArray(raw)) return [];
+
+                return raw
+                  .map((item: any, idx: number) => {
+                    if (typeof item === 'string') {
+                      const trimmed = item.trim();
+                      const m = trimmed.match(/^([A-H])[,\)\.\:]?\s*(.+)$/i);
+                      const id = (m?.[1] ?? String.fromCharCode(65 + idx)).toUpperCase();
+                      const text = (m?.[2] ?? trimmed).trim();
+                      return { id, text };
+                    }
+
+                    if (item && typeof item === 'object') {
+                      const rawId = String(item.id ?? item.letter ?? String.fromCharCode(65 + idx)).trim();
+                      const fallbackId = rawId ? rawId[0] : String.fromCharCode(65 + idx);
+                      const id = fallbackId.toUpperCase();
+
+                      const rawText = String(item.text ?? item.label ?? item.option ?? '').trim();
+                      const m = rawText.match(/^([A-H])[,\)\.\:]?\s*(.+)$/i);
+                      const text = (m?.[2] ?? rawText).trim();
+                      const finalId = (m?.[1] ? m[1].toUpperCase() : id);
+
+                      return { id: finalId, text };
+                    }
+
+                    return null;
+                  })
+                  .filter(Boolean) as Array<{ id: string; text: string }>;
+              };
+
+              const normalizedBank = normalizeWordBank(wordBankRaw);
+
+              if (String(summaryTextRaw || '').trim() && normalizedBank.length > 0) {
+                groupOptions = {
+                  ...groupOptions,
+                  summary_text: String(summaryTextRaw || ''),
+                  word_bank: normalizedBank,
+                };
+              }
             }
 
             const questions = qsRaw.map((q: any, idx: number) => {
