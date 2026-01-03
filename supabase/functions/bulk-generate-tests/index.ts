@@ -811,13 +811,14 @@ Return ONLY valid JSON:
 }
 
 function getListeningPrompt(topic: string, difficulty: string, questionType: string, questionCount: number, monologue: boolean): string {
+  // TEMPORARY: 1 minute audio for testing (revert to 300-500 words / 4 minutes for production)
   const speakerInstructions = monologue
     ? `Create a monologue (single speaker) script that is:
-- 300-500 words (approximately 4 minutes when spoken)
+- 100-150 words (approximately 1 minute when spoken)
 - Use "Speaker1:" prefix for all lines
 - Include speaker_names: {"Speaker1": "Role/Name"}`
     : `Create a dialogue between two people that is:
-- 300-500 words (approximately 4 minutes when spoken)
+- 100-150 words (approximately 1 minute when spoken)
 - Use "Speaker1:" and "Speaker2:" prefixes
 - Include speaker_names: {"Speaker1": "Name", "Speaker2": "Name"}`;
 

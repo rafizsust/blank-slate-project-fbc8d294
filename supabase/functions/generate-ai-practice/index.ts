@@ -1437,10 +1437,10 @@ Return ONLY valid JSON in this exact format:
 }
 
 // Listening question type prompts
-// HARDCODED per Architect spec: 4 minutes audio (~600 words), 7 questions
-const LISTENING_AUDIO_LENGTH_MINUTES = 4;
+// TEMPORARY: 1 minute audio for testing (revert to 4/600 for production)
+const LISTENING_AUDIO_LENGTH_MINUTES = 1; // TESTING: was 4
 const LISTENING_QUESTION_COUNT = 7;
-const LISTENING_WORD_COUNT = 600; // 4 min * 150 words/min
+const LISTENING_WORD_COUNT = 150; // TESTING: was 600 (1 min * 150 words/min)
 
 function getListeningPrompt(
   questionType: string, 

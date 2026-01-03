@@ -132,8 +132,8 @@ const DIFFICULTY_OPTIONS: { value: DifficultyLevel; label: string; color: string
 // Reading passage specifications - fixed to 4 paragraphs
 const READING_PASSAGE_PARAGRAPHS = 4;
 
-// Listening configuration - fixed 4 min audio
-const LISTENING_AUDIO_DURATION_SECONDS = 240; // 4 min fixed
+// Listening configuration - TEMPORARY: 1 min for testing (revert to 240 for production)
+const LISTENING_AUDIO_DURATION_SECONDS = 60; // 1 min for testing
 // Fixed question count for Reading and Listening
 const FIXED_QUESTION_COUNT = 7;
 // Question types that require 2 speakers
