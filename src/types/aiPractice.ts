@@ -459,8 +459,21 @@ export async function loadGeneratedTestsAsync(userId: string): Promise<Generated
 
 /** Load a single test by ID from memory cache first, then Supabase. */
 export async function loadGeneratedTestAsync(testId: string): Promise<GeneratedTest | null> {
+  // Use memory cache only if it already contains a playable audio source for listening.
+  // Otherwise, we must hydrate from DB (fixes "Device Voice" on first open until reload).
   if (currentTestCache?.id === testId) {
-    return currentTestCache;
+    const cached = currentTestCache;
+    const hasPlayableAudio = Boolean(
+      cached.audioBase64 ||
+        cached.audioUrl ||
+        (cached as any).audio_url ||
+        (cached as any).payload?.audio_url ||
+        (cached as any).payload?.audioUrl
+    );
+
+    if (cached.module !== 'listening' || hasPlayableAudio) {
+      return cached;
+    }
   }
 
   const { data, error } = await supabase
@@ -509,6 +522,9 @@ export async function loadGeneratedTestAsync(testId: string): Promise<GeneratedT
     audioFormat: data.audio_format ?? payload.audioFormat ?? undefined,
     sampleRate: data.sample_rate ?? payload.sampleRate ?? undefined,
   };
+
+  // Keep the hydrated version in memory so the test page immediately uses real audio.
+  currentTestCache = test;
 
   return test;
 }
