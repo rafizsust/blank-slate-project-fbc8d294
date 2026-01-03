@@ -140,10 +140,14 @@ export default function AIPracticeListeningTest() {
   const [audioError, setAudioError] = useState<string | null>(null);
   const [_audioSource, setAudioSource] = useState<'r2' | 'tts' | null>(null); // Track audio source for debugging
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const playbackSpeedRef = useRef(1);
   const [audioEnded, setAudioEnded] = useState(false);
   const [reviewTimeLeft, setReviewTimeLeft] = useState(30);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  const audioInitSeqRef = useRef(0);
+  const retryTimeoutRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
   
   
   // Theme settings
@@ -151,6 +155,11 @@ export default function AIPracticeListeningTest() {
   const [textSizeMode, setTextSizeMode] = useState<TextSizeMode>('regular');
   
   const startTimeRef = useRef<number>(Date.now());
+
+  // Keep latest playback speed available to retry logic without re-running effects
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+  }, [playbackSpeed]);
 
   // Calculate part ranges based on actual questions
   const partRanges = useMemo(() => {
@@ -165,31 +174,141 @@ export default function AIPracticeListeningTest() {
   }, [questions]);
 
   // Helper to initialize state from test data
-  const initializeTest = useCallback((loadedTest: GeneratedTest) => {
+  const initializeTest = useCallback(function init(loadedTest: GeneratedTest) {
+    // Mark component as mounted for async retries
+    isMountedRef.current = true;
+
+    // Reset audio state for fresh initialization (also used by retry/hydration)
+    audioInitSeqRef.current += 1;
+    const initSeq = audioInitSeqRef.current;
+
+    if (retryTimeoutRef.current) {
+      window.clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+
+    setIsPlaying(false);
+    setAudioProgress(0);
+    setAudioReady(false);
+    setAudioEnded(false);
+    setAudioError(null);
+
     setTest(loadedTest);
     setTimeLeft(loadedTest.timeMinutes * 60);
     startTimeRef.current = Date.now();
 
     // Setup audio if available - PRIORITY: base64 > audio_url (root) > audioUrl > payload.audio_url > transcript TTS
     // Check EVERY possible location including payload for preset tests
-    const resolvedAudioUrl = 
-      loadedTest.audioUrl || 
-      (loadedTest as any).audio_url || 
+    const resolvedAudioUrl =
+      loadedTest.audioUrl ||
+      (loadedTest as any).audio_url ||
       (loadedTest as any).payload?.audio_url ||
       (loadedTest as any).payload?.audioUrl ||
       null;
-    
+
+    const isPreset = Boolean((loadedTest as any).isPreset || (loadedTest as any).presetId || (loadedTest as any).payload?.presetId);
+
     console.log('[AIPracticeListening] Audio resolution check:', {
       audioUrl: loadedTest.audioUrl,
       audio_url: (loadedTest as any).audio_url,
       payloadAudioUrl: (loadedTest as any).payload?.audio_url,
-      resolved: resolvedAudioUrl
+      resolved: resolvedAudioUrl,
+      isPreset,
     });
-    
+
+    const setupR2AudioWithRetry = (url: string) => {
+      const MAX_ATTEMPTS = 6;
+      const BASE_DELAY_MS = 350;
+      const speedAtInit = playbackSpeedRef.current;
+
+      const attemptLoad = (attempt: number) => {
+        // Abort if component was unmounted or a newer init started
+        if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
+
+        // Clear any old audio element
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+
+        console.log('[AIPracticeListening] Loading R2 audio (attempt', attempt, '):', url);
+
+        const audio = new Audio(url);
+        audio.preload = 'auto';
+        audio.playbackRate = speedAtInit;
+        audioRef.current = audio;
+
+        audio.addEventListener(
+          'canplaythrough',
+          () => {
+            if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
+            console.log('[AIPracticeListening] R2 audio ready');
+            setAudioReady(true);
+            setAudioSource('r2');
+          },
+          { once: true }
+        );
+
+        audio.addEventListener('timeupdate', () => {
+          if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
+          setAudioProgress((audio.currentTime / audio.duration) * 100 || 0);
+        });
+
+        audio.addEventListener('ended', () => {
+          if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
+          setIsPlaying(false);
+          setAudioEnded(true);
+        });
+
+        audio.addEventListener(
+          'error',
+          (e) => {
+            if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
+            console.warn('[AIPracticeListening] R2 audio load error (attempt ' + attempt + ')', e);
+
+            // Retry a few times before falling back (fixes "Device Voice" on first open when R2 object isn’t ready yet)
+            if (attempt < MAX_ATTEMPTS) {
+              const delay = BASE_DELAY_MS * attempt;
+              retryTimeoutRef.current = window.setTimeout(() => attemptLoad(attempt + 1), delay);
+              return;
+            }
+
+            console.warn('[AIPracticeListening] R2 audio failed after retries; falling back to TTS');
+            if (loadedTest.transcript) {
+              setAudioError('tts_fallback');
+              setAudioSource('tts');
+            } else {
+              setAudioError('Failed to load audio');
+            }
+          },
+          { once: true }
+        );
+
+        // Kick off preload
+        try {
+          audio.load();
+        } catch {
+          // ignore
+        }
+      };
+
+      attemptLoad(1);
+    };
+
     if (loadedTest.audioBase64) {
       try {
         console.log('[AIPracticeListening] Using base64 audio from memory');
-        const pcmBytes = Uint8Array.from(atob(loadedTest.audioBase64), c => c.charCodeAt(0));
+        const pcmBytes = Uint8Array.from(atob(loadedTest.audioBase64), (c) => c.charCodeAt(0));
         const wavBlob = pcmToWav(pcmBytes, loadedTest.sampleRate || 24000);
         const url = URL.createObjectURL(wavBlob);
         audioUrlRef.current = url;
@@ -199,17 +318,21 @@ export default function AIPracticeListeningTest() {
 
         audio.playbackRate = playbackSpeed;
         audio.addEventListener('canplaythrough', () => {
+          if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
           setAudioReady(true);
           setAudioSource('r2');
         });
         audio.addEventListener('timeupdate', () => {
+          if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
           setAudioProgress((audio.currentTime / audio.duration) * 100 || 0);
         });
         audio.addEventListener('ended', () => {
+          if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
           setIsPlaying(false);
           setAudioEnded(true);
         });
         audio.addEventListener('error', () => {
+          if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
           console.warn('[AIPracticeListening] Base64 audio failed, falling back to TTS');
           if (loadedTest.transcript) {
             setAudioError('tts_fallback');
@@ -229,32 +352,47 @@ export default function AIPracticeListeningTest() {
       }
     } else if (resolvedAudioUrl) {
       console.log('[AIPracticeListening] Using R2 audio URL:', resolvedAudioUrl);
-      const audio = new Audio(resolvedAudioUrl);
-      audioRef.current = audio;
-
-      audio.playbackRate = playbackSpeed;
-      audio.addEventListener('canplaythrough', () => {
-        console.log('[AIPracticeListening] R2 audio ready');
-        setAudioReady(true);
-        setAudioSource('r2');
-      });
-      audio.addEventListener('timeupdate', () => {
-        setAudioProgress((audio.currentTime / audio.duration) * 100 || 0);
-      });
-      audio.addEventListener('ended', () => {
-        setIsPlaying(false);
-        setAudioEnded(true);
-      });
-      audio.addEventListener('error', (e) => {
-        console.warn('[AIPracticeListening] R2 audio failed, falling back to TTS:', e);
-        if (loadedTest.transcript) {
-          setAudioError('tts_fallback');
-          setAudioSource('tts');
-        } else {
-          setAudioError('Failed to load audio');
-        }
-      });
+      setupR2AudioWithRetry(resolvedAudioUrl);
     } else if (loadedTest.transcript) {
+      // If this is a preset run, the DB may populate audio_url shortly after insert.
+      // Do NOT immediately fall back to TTS; poll briefly first.
+      if (isPreset && loadedTest.id) {
+        console.log('[AIPracticeListening] Preset audio URL missing; waiting briefly before TTS fallback');
+
+        const MAX_POLLS = 6;
+        const poll = async (attempt: number) => {
+          if (!isMountedRef.current || audioInitSeqRef.current !== initSeq) return;
+
+          const refreshed = await loadGeneratedTestAsync(loadedTest.id);
+          const refreshedUrl =
+            refreshed?.audioUrl ||
+            (refreshed as any)?.audio_url ||
+            (refreshed as any)?.payload?.audio_url ||
+            (refreshed as any)?.payload?.audioUrl ||
+            null;
+
+          if (refreshed && refreshedUrl) {
+            console.log('[AIPracticeListening] Preset audio URL became available');
+            init(refreshed);
+            return;
+          }
+
+          if (attempt >= MAX_POLLS) {
+            console.warn('[AIPracticeListening] Preset audio URL still missing; falling back to TTS');
+            setAudioError('tts_fallback');
+            setAudioSource('tts');
+            return;
+          }
+
+          const delay = 300 * attempt;
+          retryTimeoutRef.current = window.setTimeout(() => void poll(attempt + 1), delay);
+        };
+
+        void poll(1);
+        // Important: stop here; we’ll either re-init with audio or fall back later.
+        return;
+      }
+
       // No audio available but transcript exists - use TTS simulation
       console.log('[AIPracticeListening] No audio URL, using TTS fallback');
       setAudioError('tts_fallback');
@@ -290,7 +428,7 @@ export default function AIPracticeListeningTest() {
 
       loadedTest.questionGroups.forEach((group) => {
         const groupType = normalizeType(group.question_type);
-        
+
         // Skip groups with invalid/missing question_type
         if (!groupType) {
           console.error('Skipping question group with missing question_type:', group.id);
@@ -358,7 +496,7 @@ export default function AIPracticeListeningTest() {
     }
 
     setLoading(false);
-  }, []);
+  }, [playbackSpeed]);
 
   // Load AI-generated test: first from memory cache, else from Supabase
   useEffect(() => {
@@ -396,11 +534,22 @@ export default function AIPracticeListeningTest() {
     });
 
     return () => {
+      isMountedRef.current = false;
+      audioInitSeqRef.current += 1; // invalidate any in-flight audio handlers
+
+      if (retryTimeoutRef.current) {
+        window.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
       }
+
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current = null;
       }
     };
   }, [testId, navigate, initializeTest]);
