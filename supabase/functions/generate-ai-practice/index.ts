@@ -1009,7 +1009,7 @@ async function generateAudio(
       offset += c.length;
     }
 
-    const audioBase64 = base64Encode(merged);
+    const audioBase64 = base64Encode(merged.buffer);
     return { audioBase64, sampleRate: 24000 };
   }
 
