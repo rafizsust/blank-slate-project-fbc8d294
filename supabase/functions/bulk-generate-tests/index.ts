@@ -74,6 +74,17 @@ function getRandomVoice(preferredAccent?: string): { voiceName: string; accent: 
   return { voiceName, accent };
 }
 
+function pickSecondaryVoice(primaryVoice: string, accent: string): string {
+  const voices = TTS_VOICES[accent as keyof typeof TTS_VOICES] ?? TTS_VOICES.US;
+  const primaryGender = getVoiceGender(primaryVoice);
+
+  const candidates = voices.filter(v => v !== primaryVoice);
+  const oppositeGenderCandidates = candidates.filter(v => getVoiceGender(v) !== primaryGender);
+
+  const pool = oppositeGenderCandidates.length > 0 ? oppositeGenderCandidates : candidates;
+  return pool[Math.floor(Math.random() * pool.length)] ?? primaryVoice;
+}
+
 // API Key management for round-robin Gemini TTS
 interface ApiKeyRecord {
   id: string;
@@ -406,11 +417,28 @@ async function processGenerationJob(
       // LISTENING: Generate audio with MONOLOGUE RESCUE on failure
       if (module === "listening") {
         const scriptText = content.dialogue || content.script || "";
+        const hasSecondSpeaker = !monologue && /Speaker2\s*:/i.test(scriptText) && /Speaker1\s*:/i.test(scriptText);
+
+        // Persist speaker voice mapping in the JSON payload (so admin preview can show both voices)
+        if (hasSecondSpeaker) {
+          const speaker2Voice = pickSecondaryVoice(voiceName, accent);
+          content.tts_speaker_voices = { Speaker1: voiceName, Speaker2: speaker2Voice };
+        } else {
+          content.tts_speaker_voices = { Speaker1: voiceName };
+        }
         
         if (scriptText.trim()) {
           try {
             audioUrl = await withRetry(
-              () => generateAndUploadAudio(supabase, scriptText, voiceName, monologue, jobId, i),
+              () => generateAndUploadAudio(
+                supabase,
+                scriptText,
+                voiceName,
+                hasSecondSpeaker ? content.tts_speaker_voices?.Speaker2 : undefined,
+                monologue,
+                jobId,
+                i
+              ),
               3,
               3000
             );
@@ -1203,42 +1231,158 @@ async function generateGeminiTtsDirect(
   throw lastError || new Error("All Gemini API keys failed");
 }
 
+async function generateGeminiTtsMultiSpeaker(
+  supabaseServiceClient: any,
+  text: string,
+  voices: { Speaker1: string; Speaker2: string }
+): Promise<{ audioBase64: string; sampleRate: number }> {
+  if (apiKeyCache.length === 0) {
+    apiKeyCache = await getActiveGeminiKeys(supabaseServiceClient);
+    if (apiKeyCache.length === 0) {
+      throw new Error("No active Gemini API keys available in api_keys table");
+    }
+  }
+
+  const prompt = `Read the following IELTS Listening dialogue naturally.
+- Do NOT speak the labels "Speaker1" or "Speaker2" out loud.
+- Keep a short pause between turns.
+- Speak clearly at a moderate pace.
+
+${text}`;
+
+  let lastError: Error | null = null;
+  const keysToTry = apiKeyCache.length;
+  const triedKeyIds = new Set<string>();
+
+  for (let i = 0; i < keysToTry; i++) {
+    const keyRecord = getNextApiKey();
+    if (!keyRecord || triedKeyIds.has(keyRecord.id)) continue;
+    triedKeyIds.add(keyRecord.id);
+
+    try {
+      const resp = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${keyRecord.key_value}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseModalities: ["AUDIO"],
+              speechConfig: {
+                multiSpeakerVoiceConfig: {
+                  speakerVoiceConfigs: [
+                    {
+                      speaker: "Speaker1",
+                      voiceConfig: { prebuiltVoiceConfig: { voiceName: voices.Speaker1 } },
+                    },
+                    {
+                      speaker: "Speaker2",
+                      voiceConfig: { prebuiltVoiceConfig: { voiceName: voices.Speaker2 } },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        },
+        90_000
+      );
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        console.error(
+          `Gemini multi-speaker TTS error with key ${keyRecord.id}:`,
+          resp.status,
+          errorText.slice(0, 200)
+        );
+        await incrementKeyErrorCount(
+          supabaseServiceClient,
+          keyRecord.id,
+          resp.status === 401 || resp.status === 403
+        );
+        lastError = new Error(`Gemini multi-speaker TTS failed (${resp.status})`);
+        continue;
+      }
+
+      const data = await resp.json();
+      const audioData = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data as string | undefined;
+
+      if (!audioData) {
+        lastError = new Error("No audio returned from Gemini multi-speaker TTS");
+        continue;
+      }
+
+      await resetKeyErrorCount(supabaseServiceClient, keyRecord.id);
+      return { audioBase64: audioData, sampleRate: 24000 };
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.error(
+        `Gemini multi-speaker TTS attempt with key ${keyRecord.id} failed:`,
+        lastError.message
+      );
+    }
+  }
+
+  throw lastError || new Error("All Gemini API keys failed (multi-speaker)");
+}
+
 // Generate and upload audio for listening tests
 async function generateAndUploadAudio(
   supabaseServiceClient: any,
   text: string,
-  voiceName: string,
+  speaker1Voice: string,
+  speaker2Voice: string | undefined,
   monologue: boolean,
   jobId: string,
   index: number
 ): Promise<string> {
-  // Clean text for TTS
-  const cleanText = text
+  const normalized = text
+    .replace(/\r\n/g, "\n")
     .replace(/\[pause\s*\d*s?\]/gi, "...")
-    .replace(/\n+/g, " ")
-    .slice(0, 5000)
     .trim();
+
+  const isDialogue = !monologue && /Speaker1\s*:/i.test(normalized) && /Speaker2\s*:/i.test(normalized);
+
+  // Keep speaker turn boundaries for multi-speaker TTS
+  let cleanText = normalized;
+  if (isDialogue) {
+    cleanText = cleanText
+      // Ensure each speaker label starts on a new line
+      .replace(/\s*(Speaker1\s*:)/gi, "\n$1")
+      .replace(/\s*(Speaker2\s*:)/gi, "\n$1")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  } else {
+    cleanText = cleanText
+      .replace(/\n+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+
+  cleanText = cleanText.slice(0, 5000).trim();
 
   if (!cleanText) {
     throw new Error("Empty text for TTS");
   }
 
-  // Use Gemini TTS directly with api_keys table (round-robin)
-  const { audioBase64, sampleRate } = await generateGeminiTtsDirect(
-    supabaseServiceClient,
-    cleanText,
-    voiceName
-  );
+  // Use multi-speaker Gemini TTS when we detect Speaker1/Speaker2 dialogue
+  const { audioBase64, sampleRate } = isDialogue && speaker2Voice
+    ? await generateGeminiTtsMultiSpeaker(supabaseServiceClient, cleanText, {
+        Speaker1: speaker1Voice,
+        Speaker2: speaker2Voice,
+      })
+    : await generateGeminiTtsDirect(supabaseServiceClient, cleanText, speaker1Voice);
 
   // Convert base64 PCM to WAV and upload to R2
-  const pcmBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+  const pcmBytes = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0));
   const wavBytes = createWavFromPcm(pcmBytes, sampleRate);
-  
+
   const { uploadToR2 } = await import("../_shared/r2Client.ts");
   const key = `generated-tests/${jobId}/${index}.wav`;
-  
+
   const uploadResult = await uploadToR2(key, wavBytes, "audio/wav");
-  
+
   if (!uploadResult.success || !uploadResult.url) {
     throw new Error(uploadResult.error || "R2 upload failed");
   }

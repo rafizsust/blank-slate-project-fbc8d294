@@ -528,7 +528,9 @@ export default function TestBankAdmin() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Voice:</span>{' '}
-                    {previewTest.voice_id || 'N/A'}
+                    {(previewTest.content_payload?.tts_speaker_voices
+                      ? Object.values(previewTest.content_payload.tts_speaker_voices).join(' + ')
+                      : previewTest.voice_id) || 'N/A'}
                   </div>
                 </div>
 
