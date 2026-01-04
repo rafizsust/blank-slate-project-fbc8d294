@@ -416,26 +416,24 @@ export function ListeningQuestionGroupPreview({ group, audioUrl }: ListeningQues
 
     // Flowchart Completion
     if (type === 'FLOWCHART_COMPLETION' && group.options?.steps) {
+      const rawSteps = group.options?.flowchart_steps || group.options?.steps || [];
+      const steps = (Array.isArray(rawSteps) ? rawSteps : []).map((s: any, idx: number) => ({
+        id: s.id || `preview-step-${idx}`,
+        label: s.label || s.text || '', 
+        questionNumber: s.questionNumber || s.blankNumber,
+        isBlank: s.isBlank ?? s.hasBlank ?? false
+      }));
+      
       return (
         <FlowchartCompletion
-          testId="preview"
-          groupId={group.id || 'preview-group'}
-          instruction={group.instruction || 'Complete the flowchart. Choose the correct answer and move it into the gap.'}
           title={group.options?.title}
-          flowchartSteps={(group.options?.steps || []).map((step: any, idx: number) => ({
-            id: `preview-step-${idx}`,
-            text: step.text || '',
-            hasBlank: step.hasBlank || false,
-            blankNumber: step.blankNumber,
-            alignment: step.alignment,
-          }))}
-          groupOptions={group.options?.options || []}
-          groupOptionFormat="text"
+          instruction={group.instruction || "Choose NO MORE THAN THREE WORDS AND/OR A NUMBER from the passage for each answer."}
+          steps={steps}
+          direction={group.options?.direction || 'vertical'}
           answers={answers}
           onAnswerChange={handleAnswerChange}
+          currentQuestion={group.start_question}
           fontSize={14}
-          renderRichText={renderRichText}
-          questionRange={`${group.start_question}-${group.end_question}`}
         />
       );
     }

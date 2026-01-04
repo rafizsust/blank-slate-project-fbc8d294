@@ -642,28 +642,42 @@ export function ListeningQuestions({
               />
             ) : group.question_type === 'FLOWCHART_COMPLETION' ? (
               <div className="space-y-4">
-                {/* Note: We don't display flowchart image for listening - the interactive component renders the flowchart */}
-                <FlowchartCompletion
-                  testId={testId}
-                  groupId={group.id}
-                  instruction={group.instruction || 'Complete the flowchart. Choose the correct answer and move it into the gap.'}
-                  title={group.options?.title}
-                  flowchartSteps={(group.options?.steps || []).map((step: any, idx: number) => ({
-                    id: `${group.id}-step-${idx}`,
-                    text: step.text || '',
-                    hasBlank: step.hasBlank || false,
-                    blankNumber: step.blankNumber,
-                    alignment: step.alignment,
-                  }))}
-                  groupOptions={group.options?.options || []}
-                  groupOptionFormat={group.options?.option_format || 'A'}
-                  answers={answers}
-                  onAnswerChange={onAnswerChange}
-                  onQuestionFocus={setCurrentQuestion}
-                  fontSize={fontSize}
-                  renderRichText={renderRichText}
-                  questionRange={questionRange}
-                />
+                {(() => {
+                  // 1. Safe Parse (Handle DB String vs AI Object)
+                  let opts: any = group.options;
+                  if (typeof opts === 'string') {
+                    try { opts = JSON.parse(opts); } catch { opts = {}; }
+                  }
+                  
+                  // 2. Extract Props
+                  const title = opts?.title || opts?.flowchart_title || group.group_heading || '';
+                  const direction = opts?.direction || 'vertical';
+                  
+                  // 3. Fallback Instruction (Standard IELTS Limit)
+                  const instruction = group.instruction || "Choose NO MORE THAN THREE WORDS AND/OR A NUMBER from the passage for each answer.";
+                  
+                  // 4. Map Steps (Normalize 'label' vs 'text')
+                  const rawSteps = opts?.flowchart_steps || opts?.steps || [];
+                  const steps = (Array.isArray(rawSteps) ? rawSteps : []).map((s: any, idx: number) => ({
+                    id: s.id || `${group.id}-step-${idx}`,
+                    label: s.label || s.text || '', 
+                    questionNumber: s.questionNumber || s.blankNumber,
+                    isBlank: s.isBlank ?? s.hasBlank ?? false
+                  }));
+
+                  return (
+                    <FlowchartCompletion
+                      title={title}
+                      instruction={instruction}
+                      steps={steps}
+                      direction={direction}
+                      answers={answers}
+                      onAnswerChange={onAnswerChange}
+                      currentQuestion={currentQuestion}
+                      fontSize={fontSize}
+                    />
+                  );
+                })()}
               </div>
             ) : (group.question_type === 'FILL_IN_BLANK' && group.options?.display_mode === 'note_style') || group.question_type === 'NOTE_COMPLETION' ? (
               /* Note-style Fill-in-Blank - Official IELTS format with category labels on left */
