@@ -888,6 +888,11 @@ export function ReadingQuestions({
 
                     const opts = (groupData?.options || {}) as any;
                     const title = opts?.title || opts?.flowchart_title || '';
+                    
+                    // Get instruction from group or use IELTS default
+                    const flowchartInstruction = opts?.instruction || 
+                      instruction || 
+                      "Complete the flow-chart below. Choose NO MORE THAN THREE WORDS AND/OR A NUMBER from the passage for each answer.";
 
                     const rawSteps = opts?.steps || opts?.flowchart_steps;
                     
@@ -916,6 +921,7 @@ export function ReadingQuestions({
                     return (
                       <FlowchartCompletion
                         title={title}
+                        instruction={flowchartInstruction}
                         steps={steps}
                         direction={direction}
                         answers={answers}

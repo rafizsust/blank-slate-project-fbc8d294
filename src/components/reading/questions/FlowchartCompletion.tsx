@@ -11,6 +11,7 @@ interface FlowchartStep {
 
 interface FlowchartCompletionProps {
   title?: string;
+  instruction?: string;
   steps: FlowchartStep[];
   direction?: 'vertical' | 'horizontal';
   answers: Record<number, string>;
@@ -21,6 +22,7 @@ interface FlowchartCompletionProps {
 
 export function FlowchartCompletion({
   title,
+  instruction,
   steps,
   direction = 'vertical',
   answers,
@@ -30,9 +32,6 @@ export function FlowchartCompletion({
 }: FlowchartCompletionProps) {
   const isVertical = direction === 'vertical';
   const ArrowIcon = isVertical ? ArrowDown : ArrowRight;
-
-  // Helper to determine if we should render an arrow
-  const shouldRenderArrow = (index: number, total: number) => index < total - 1;
 
   // Strip blank markers from label text (they'll be replaced with input)
   const stripBlankMarker = (label: string, questionNumber?: number) => {
@@ -49,9 +48,20 @@ export function FlowchartCompletion({
 
   return (
     <div className="space-y-3" style={{ fontSize: `${fontSize}px` }}>
-      {title && (
-        <h4 className="font-semibold text-base text-foreground mb-3">{title}</h4>
-      )}
+      {/* Header Section */}
+      <div className="mb-4">
+        {title && (
+          <h4 className="font-semibold text-base text-foreground mb-2">{title}</h4>
+        )}
+        {/* FIX: Render Instruction */}
+        {instruction && (
+          <div className="p-3 bg-muted/50 rounded-lg border border-border">
+            <p className="text-sm text-foreground italic">
+              {instruction}
+            </p>
+          </div>
+        )}
+      </div>
       
       <div className={cn(
         "flex items-center justify-center gap-2",
@@ -63,6 +73,7 @@ export function FlowchartCompletion({
           const qNum = step.questionNumber;
           const val = qNum ? answers[qNum] || '' : '';
           const cleanLabel = stripBlankMarker(step.label, qNum);
+          const isLast = index === steps.length - 1;
 
           return (
             <div key={step.id} className={cn(
@@ -78,30 +89,32 @@ export function FlowchartCompletion({
                     : "border-border bg-card hover:border-muted-foreground/50"
                 )}
               >
-                <div className="flex flex-wrap items-baseline justify-center gap-1">
-                  {/* Label Text */}
-                  <span className="text-muted-foreground text-sm">
-                    {cleanLabel}
-                  </span>
-
-                  {/* Inline Input (Fixes New Line Issue) */}
-                  {showInput && (
-                    <span className="inline-flex items-baseline">
-                      <Input
-                        type="text"
-                        value={val}
-                        onChange={(e) => onAnswerChange(qNum!, e.target.value)}
-                        className="h-7 min-w-[120px] max-w-[180px] border-b-2 border-t-0 border-x-0 border-muted-foreground/40 rounded-none px-1 py-0 focus-visible:ring-0 focus-visible:border-primary bg-transparent text-center font-semibold text-primary"
-                        placeholder={`(${qNum})`}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                <div className="inline items-baseline flex-wrap">
+                  {/* Label Text + Inline Input */}
+                  {showInput ? (
+                    <span className="text-muted-foreground text-sm">
+                      {cleanLabel}{' '}
+                      <span className="inline-flex items-baseline">
+                        <Input
+                          type="text"
+                          value={val}
+                          onChange={(e) => onAnswerChange(qNum!, e.target.value)}
+                          className="h-7 min-w-[120px] max-w-[180px] border-b-2 border-t-0 border-x-0 border-muted-foreground/40 rounded-none px-1 py-0 focus-visible:ring-0 focus-visible:border-primary bg-transparent text-center font-semibold text-primary align-middle"
+                          placeholder={`(${qNum})`}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      {step.label}
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Arrow Connector */}
-              {shouldRenderArrow(index, steps.length) && (
+              {!isLast && (
                 <div className={cn(
                   "flex items-center justify-center text-muted-foreground",
                   isVertical ? "py-2" : "px-2"

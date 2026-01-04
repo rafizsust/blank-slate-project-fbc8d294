@@ -1554,13 +1554,18 @@ Return ONLY valid JSON in this exact format:
     case 'FLOWCHART_COMPLETION':
       return basePrompt + `2. Create a flowchart completion task describing a process with ${questionCount} blanks.
 
+CRITICAL INSTRUCTION RULES:
+- The instruction displayed to the user MUST be exactly: "Choose NO MORE THAN THREE WORDS AND/OR A NUMBER from the passage for each answer."
+- The answers you select from the text MUST respect this limit (max 3 words).
+- Do not artificially limit it to 2 words if a 3-word answer is better.
+
 Return ONLY valid JSON in this exact format:
 {
   "passage": {
     "title": "The title of the passage",
     "content": "The full passage text describing a process with paragraph labels like [A], [B], etc."
   },
-  "instruction": "Complete the flow chart below. Choose NO MORE THAN TWO WORDS from the passage for each answer.",
+  "instruction": "Choose NO MORE THAN THREE WORDS AND/OR A NUMBER from the passage for each answer.",
   "flowchart_title": "Process of...",
   "flowchart_steps": [
     {"id": "step1", "label": "First step: gathering materials", "isBlank": false},
