@@ -372,6 +372,96 @@ export default function AIPractice() {
       console.warn('Could not check quota:', err);
     }
 
+    // OPTIMIZATION: Check DB cache BEFORE calling edge function (saves quota + bandwidth)
+    // Only for reading and listening modules which have presets in generated_test_audio
+    if (activeModule === 'reading' || activeModule === 'listening') {
+      try {
+        console.log('Checking DB cache for pre-generated test...');
+        const { data: cachedTests, error: cacheError } = await supabase
+          .from('generated_test_audio')
+          .select('*')
+          .eq('module', activeModule)
+          .eq('is_published', true)
+          .eq('status', 'ready')
+          .limit(50);
+
+        if (!cacheError && cachedTests && cachedTests.length > 0) {
+          // Filter by question type
+          let matchingTests = cachedTests.filter(t => t.question_type === currentQuestionType);
+          
+          // If no exact match, try any test of same module
+          if (matchingTests.length === 0) matchingTests = cachedTests;
+          
+          // Filter by difficulty
+          const difficultyMatches = matchingTests.filter(t => t.difficulty === difficulty);
+          if (difficultyMatches.length > 0) matchingTests = difficultyMatches;
+          
+          // Filter by topic if preference specified
+          if (topicPreference.trim()) {
+            const topicMatches = matchingTests.filter(t => 
+              t.topic.toLowerCase().includes(topicPreference.toLowerCase())
+            );
+            if (topicMatches.length > 0) matchingTests = topicMatches;
+          }
+
+          if (matchingTests.length > 0) {
+            // Pick random matching test
+            const cachedTest = matchingTests[Math.floor(Math.random() * matchingTests.length)];
+            const payload = cachedTest.content_payload as Record<string, unknown>;
+            
+            // Validate payload has questionGroups
+            const questionGroups = payload?.questionGroups as unknown[];
+            if (questionGroups && Array.isArray(questionGroups) && questionGroups.length > 0) {
+              console.log('Cache HIT! Using pre-generated test:', cachedTest.id, cachedTest.topic);
+              
+              // Build the GeneratedTest from cached data
+              const generatedTest: GeneratedTest = {
+                id: `cached-${cachedTest.id}-${Date.now()}`,
+                module: activeModule,
+                questionType: currentQuestionType,
+                difficulty,
+                topic: cachedTest.topic,
+                timeMinutes: timeMinutes,
+                passage: payload.passage as any,
+                audioUrl: cachedTest.audio_url || undefined,
+                audioBase64: undefined,
+                audioFormat: undefined,
+                sampleRate: undefined,
+                transcript: cachedTest.transcript || (payload.transcript as string) || undefined,
+                questionGroups: questionGroups as any,
+                writingTask: payload.writingTask as any,
+                speakingParts: payload.speakingParts as any,
+                isPreset: true,
+                presetId: cachedTest.id,
+                totalQuestions: (questionGroups as any[]).reduce((acc, g) => acc + (g.questions?.length || 0), 0),
+                generatedAt: new Date().toISOString(),
+              };
+
+              setCurrentTest(generatedTest);
+              await saveGeneratedTestAsync(generatedTest, user.id);
+              playCompletionSound();
+
+              toast({
+                title: 'Test Ready!',
+                description: `Using pre-generated ${activeModule} test: ${cachedTest.topic}`,
+              });
+
+              // Navigate directly
+              if (activeModule === 'reading') {
+                navigate(`/ai-practice/reading/${generatedTest.id}`);
+              } else if (activeModule === 'listening') {
+                navigate(`/ai-practice/listening/${generatedTest.id}`);
+              }
+              return; // Skip edge function call entirely
+            }
+          }
+        }
+        console.log('Cache miss, proceeding with edge function...');
+      } catch (cacheErr) {
+        console.warn('DB cache check failed, proceeding with generation:', cacheErr);
+      }
+    }
+
     setIsGenerating(true);
     setGenerationStep(0);
 
