@@ -366,6 +366,9 @@ export async function saveGeneratedTestAsync(test: GeneratedTest, userId: string
     audio_url: test.audioUrl ?? null,
     audio_format: test.audioFormat ?? null,
     sample_rate: test.sampleRate ?? null,
+    // Track if this test came from a preset (for cache deduplication)
+    is_preset: test.isPreset ?? null,
+    preset_id: test.presetId ?? null,
   }).select('audio_url').single();
 
   if (insertError) {
