@@ -376,25 +376,46 @@ export default function AIPractice() {
     // Only for reading and listening modules which have presets in generated_test_audio
     if (activeModule === 'reading' || activeModule === 'listening') {
       try {
-        console.log('Checking DB cache for pre-generated test...');
-        const { data: cachedTests, error: cacheError } = await supabase
-          .from('generated_test_audio')
-          .select('*')
-          .eq('module', activeModule)
-          .eq('is_published', true)
-          .eq('status', 'ready')
-          .limit(50);
+        console.log('[cache] Checking DB cache for pre-generated test...');
+        
+        // Fetch cached presets and user's already-used presets in parallel
+        const [cachedTestsResult, usedPresetsResult] = await Promise.all([
+          supabase
+            .from('generated_test_audio')
+            .select('*')
+            .eq('module', activeModule)
+            .eq('is_published', true)
+            .eq('status', 'ready')
+            .limit(50),
+          supabase
+            .from('ai_practice_tests')
+            .select('preset_id')
+            .eq('user_id', user.id)
+            .not('preset_id', 'is', null)
+        ]);
+
+        const { data: cachedTests, error: cacheError } = cachedTestsResult;
+        const usedPresetIds = new Set(
+          (usedPresetsResult.data || []).map(r => r.preset_id).filter(Boolean)
+        );
+        
+        console.log('[cache] fetched rows:', cachedTests?.length || 0, 'usedPresets:', usedPresetIds.size);
 
         if (!cacheError && cachedTests && cachedTests.length > 0) {
           // Filter by question type
           let matchingTests = cachedTests.filter(t => t.question_type === currentQuestionType);
+          console.log('[cache] after question_type filter:', matchingTests.length, 'expected:', currentQuestionType);
           
           // If no exact match, try any test of same module
-          if (matchingTests.length === 0) matchingTests = cachedTests;
+          if (matchingTests.length === 0) {
+            matchingTests = cachedTests;
+            console.log('[cache] no question_type match, using all cached tests');
+          }
           
           // Filter by difficulty
           const difficultyMatches = matchingTests.filter(t => t.difficulty === difficulty);
           if (difficultyMatches.length > 0) matchingTests = difficultyMatches;
+          console.log('[cache] after difficulty filter:', matchingTests.length);
           
           // Filter by topic if preference specified
           if (topicPreference.trim()) {
@@ -402,17 +423,25 @@ export default function AIPractice() {
               t.topic.toLowerCase().includes(topicPreference.toLowerCase())
             );
             if (topicMatches.length > 0) matchingTests = topicMatches;
+            console.log('[cache] after topic filter:', matchingTests.length);
           }
+          
+          // Exclude presets the user has already taken (avoid repetition)
+          const freshTests = matchingTests.filter(t => !usedPresetIds.has(t.id));
+          console.log('[cache] after excluding used presets:', freshTests.length, 'of', matchingTests.length);
+          
+          // If all presets used, allow re-use (reset cycle)
+          const testsToChooseFrom = freshTests.length > 0 ? freshTests : matchingTests;
 
-          if (matchingTests.length > 0) {
+          if (testsToChooseFrom.length > 0) {
             // Pick random matching test
-            const cachedTest = matchingTests[Math.floor(Math.random() * matchingTests.length)];
+            const cachedTest = testsToChooseFrom[Math.floor(Math.random() * testsToChooseFrom.length)];
             const payload = cachedTest.content_payload as Record<string, unknown>;
             
             // Validate payload has questionGroups
             const questionGroups = payload?.questionGroups as unknown[];
             if (questionGroups && Array.isArray(questionGroups) && questionGroups.length > 0) {
-              console.log('Cache HIT! Using pre-generated test:', cachedTest.id, cachedTest.topic);
+              console.log('[cache] HIT! Using pre-generated test:', cachedTest.id, cachedTest.topic);
               
               // Build the GeneratedTest from cached data
               const generatedTest: GeneratedTest = {
@@ -453,12 +482,14 @@ export default function AIPractice() {
                 navigate(`/ai-practice/listening/${generatedTest.id}`);
               }
               return; // Skip edge function call entirely
+            } else {
+              console.log('[cache] MISS: payload missing valid questionGroups');
             }
           }
         }
-        console.log('Cache miss, proceeding with edge function...');
+        console.log('[cache] MISS, proceeding with edge function...');
       } catch (cacheErr) {
-        console.warn('DB cache check failed, proceeding with generation:', cacheErr);
+        console.warn('[cache] Check failed, proceeding with generation:', cacheErr);
       }
     }
 

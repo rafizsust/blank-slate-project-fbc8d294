@@ -100,8 +100,10 @@ export type Database = {
           difficulty: string
           generated_at: string
           id: string
+          is_preset: boolean | null
           module: string
           payload: Json
+          preset_id: string | null
           question_type: string
           sample_rate: number | null
           time_minutes: number
@@ -115,8 +117,10 @@ export type Database = {
           difficulty: string
           generated_at?: string
           id?: string
+          is_preset?: boolean | null
           module: string
           payload?: Json
+          preset_id?: string | null
           question_type: string
           sample_rate?: number | null
           time_minutes: number
@@ -130,8 +134,10 @@ export type Database = {
           difficulty?: string
           generated_at?: string
           id?: string
+          is_preset?: boolean | null
           module?: string
           payload?: Json
+          preset_id?: string | null
           question_type?: string
           sample_rate?: number | null
           time_minutes?: number
